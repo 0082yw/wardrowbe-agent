@@ -1,0 +1,101 @@
+{
+  "title": "KI-Outfit-Assistent",
+  "description": "Echte Kleidungsstücke abfragen oder bis zu 3 Alltags-, Büro- oder formelle Outfits anhand gespeicherter Farben, Typen und Formalität ansehen.",
+  "inputLabel": "Was möchtest du tragen oder suchen?",
+  "placeholder": "Unterstützte chinesische Befehle: 帮我搭配一套日常穿搭 / 帮我搭配三套通勤穿搭，包含白色衬衫和蓝色牛仔裤 / 推荐正式穿搭",
+  "inputHelp": "Du kannst die Anfrage während der Erstellung ändern. Dadurch wird die vorherige Vorschau abgebrochen.",
+  "characterCount": "{count} / {max} Zeichen",
+  "generate": "Vorschau erstellen",
+  "generating": "Wird erstellt…",
+  "loading": "Deine Garderobe wird durchsucht und die Vorschau vorbereitet…",
+  "results": "Vorschauergebnisse",
+  "reply": "Antwort des Assistenten",
+  "outfit": "Einzelteilvorschau {number}",
+  "imageUnavailable": "Bild nicht verfügbar",
+  "unnamedItem": "Unbenanntes Kleidungsstück",
+  "itemType": "Typ: {type}",
+  "reasoning": "Erläuterung der Abfrage",
+  "styleNotes": "Vorschauhinweise",
+  "previewOnly": "Nur Einzelteilvorschauen. Die Ergebnisse bilden kein vollständiges Outfit. Es wurde kein Outfit gespeichert.",
+  "emptyState": "Beschreibe deine Anfrage zur Garderobe, um zu beginnen.",
+  "status": {
+    "success": "Vorschau bereit",
+    "needs_clarification": "Weitere Angaben erforderlich",
+    "no_items": "Keine verfügbaren Kleidungsstücke",
+    "invalid_result": "Ungültiges Ergebnis"
+  },
+  "guidance": {
+    "needs_clarification": "Beantworte die Frage des Assistenten mit weiteren Angaben, etwa den gesuchten Kleidungstypen.",
+    "no_items": "Keine verfügbaren Teile gefunden. Prüfe die passenden Garderobenteile und ihren Status.",
+    "invalid_result": "Diese Vorschau konnte nicht bestätigt werden. Bitte erneut erstellen."
+  },
+  "errors": {
+    "blank": "Bitte gib eine Anfrage ein.",
+    "tooLong": "Die Anfrage darf höchstens 10.000 Zeichen enthalten.",
+    "auth": "Melde dich erneut an, um den Assistenten zu nutzen.",
+    "invalidInput": "Die Anfrage wurde abgelehnt. Prüfe deine Eingabe und versuche es erneut.",
+    "rateLimited": "Zu viele Anfragen. Bitte warte vor dem nächsten Versuch.",
+    "failed": "Die Vorschau konnte nicht abgerufen werden. Bitte erneut versuchen.",
+    "invalidResponse": "Der Dienst hat ein unerwartetes Antwortformat geliefert. Bitte erneut versuchen."
+  },
+  "runtimeBadge": {
+    "unknown": "Modellmodus unbestätigt",
+    "configured": "Lokales Ollama konfiguriert",
+    "unavailable": "Lokales Modell nicht verfügbar",
+    "remoteConfigured": "Remote-Modell erreichbar",
+    "remoteUnavailable": "Remote-Modell nicht verfügbar"
+  },
+  "runtimeNotice": {
+    "unknown": "Schreibgeschützte Vorschau einer Garderobenabfrage. Das Backend hat den Modellmodus noch nicht bestätigt. Es wird kein Outfit gespeichert.",
+    "configured": "Das Backend hat die lokale Ollama-Konfiguration qwen3:0.6b-cpu bestätigt. Diese Prüfung führt keine Inferenz aus. Kleidungsabfragen und bis zu 3 vom Backend geprüfte Alltags- oder Büro-Outfits werden unterstützt. Vorschauen werden nicht gespeichert. Chinesische Beispiele verwenden.",
+    "unavailable": "Laut Backend ist das lokale Modell nicht verfügbar oder seine CPU-Konfiguration unbestätigt. Diese Statusabfrage führt das Modell nicht aus. Vorschauen bleiben schreibgeschützt.",
+    "remoteConfigured": "Der Remote-Modellendpunkt ist erreichbar. Diese Prüfung führt keine Inferenz aus und bestätigt keine GPU-Nutzung. Vorschauen werden nicht gespeichert.",
+    "remoteUnavailable": "SSH-Tunnelendpunkt oder Remote-Modell nicht verfügbar. Prüfen Sie den manuell eingerichteten Tunnel und den Dienst. Kein automatischer Wechsel zum lokalen Modell."
+  },
+  "outfitReasoning": "Begründung",
+  "outfitPreviewOnly": "Nicht gespeicherte Basis-Outfit-Vorschau. Eignung selbst prüfen; Wetter und Materialien werden nicht angenommen.",
+  "scene": {
+    "daily": "Alltags-Outfit",
+    "commute": "Büro-Outfit",
+    "formal": "Formelles Outfit"
+  },
+  "roles": {
+    "base_top": "Oberteil",
+    "bottom": "Unterteil",
+    "footwear": "Schuhe (optional)",
+    "outer_layer": "Jacke (optional)"
+  },
+  "previewSelector": "Outfit-Vorschau wechseln",
+  "allPreviews": "Alle Outfits",
+  "selectPreview": "Outfit {number}",
+  "unsaved": "Vorschau nicht gespeichert",
+  "runtimeDetails": {
+    "label": "Inferenzstatus",
+    "localCpu": "Lokale CPU (local_cpu)",
+    "remoteGpu": "Remote-GPU-Modus (remote_gpu)",
+    "gpuUnverified": "Die GPU-Ausführung wurde nicht geprüft; GPU-Beschleunigung ist nicht bestätigt.",
+    "gpuReadinessOnly": "Hier wird nur die Dienstbereitschaft geprüft. GPU-Nachweise stehen beim jeweiligen Ergebnis."
+  },
+  "tunnelState": {
+    "connected": "SSH-Tunnelendpunkt erreichbar",
+    "disconnected": "SSH-Tunnelendpunkt getrennt oder Modelldienst nicht verfügbar",
+    "unknown": "Status des SSH-Tunnelendpunkts unbestätigt"
+  },
+  "requestExecution": {
+    "label": "Ausführung dieser Anfrage",
+    "request": "Anfrage {id}",
+    "gpuVerified": "Diese Anfrage wurde auf der freigegebenen Remote-GPU bestätigt.",
+    "gpuUnverified": "Für diese Anfrage liegt kein vertrauenswürdiger GPU-Nachweis vor.",
+    "copyFallback": "Einige Texte verwenden einen sicheren Backend-Ersatz.",
+    "proofLabel": "GPU-Nachweis",
+    "proofExpired": "Der Nachweis ist abgelaufen oder aktuell nicht prüfbar. Dies sind historische Messungen.",
+    "proofRequest": "Anfrage-ID",
+    "proofPid": "Modellprozess-PID",
+    "proofDevice": "GPU-UUID",
+    "proofLayers": "Geladene Schichten",
+    "proofMemory": "Höchster gemessener Prozessspeicher",
+    "proofMemoryValue": "{value, number} MiB",
+    "proofSamples": "Messwerte",
+    "sampleScope": "Die Messungen decken das erfasste Zeitfenster ab, nicht garantiert die gesamte Anfrage."
+  }
+}

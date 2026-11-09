@@ -1,0 +1,94 @@
+{
+  "bestCombinations": {
+    "description": "Coppie di capi che ami costantemente insieme",
+    "title": "Le tue migliori combinazioni"
+  },
+  "colorPreferences": {
+    "description": "Colori che tendi ad accettare o rifiutare",
+    "noData": "Non abbastanza feedback per determinare le preferenze cromatiche.",
+    "title": "Preferenze cromatiche apprese"
+  },
+  "confidence": "{percent}% di fiducia",
+  "dismiss": "Ignora",
+  "insightCategoryColor": "Colore",
+  "insightCategoryOccasion": "Occasione",
+  "insightCategoryOverall": "Generale",
+  "insightCategoryStyle": "Stile",
+  "insightCategoryWeather": "Meteo",
+  "insightColorAvoidedDescription": "Tendi a rifiutare gli outfit con il {color}. Ti suggeriremo delle alternative.",
+  "insightColorAvoidedTitle": "Il {color} non fa per te",
+  "insightColorLovedDescription": "Il tuo feedback mostra una forte preferenza per i capi {color}. Li metteremo in primo piano nei tuoi suggerimenti.",
+  "insightColorLovedTitle": "Adori il {color}!",
+  "insightGreatMatchDescription": "Accetti il {percent} dei nostri suggerimenti. Stiamo imparando bene il tuo stile!",
+  "insightGreatMatchTitle": "Ottima intesa!",
+  "insightHelpUsLearnDescription": "Hai rifiutato molti suggerimenti. Valuta di aggiornare le tue preferenze per aiutarci a migliorare.",
+  "insightHelpUsLearnTitle": "Aiutaci a conoscere il tuo stile",
+  "insightStyleLeaningDescription": "In base al tuo feedback, preferisci gli stili {styles}.",
+  "insightStyleLeaningTitle": "Il tuo stile: {style}",
+  "interpretationDisliked": "poco apprezzato",
+  "interpretationLiked": "apprezzato",
+  "interpretationNeutral": "neutro",
+  "interpretationStronglyDisliked": "per niente apprezzato",
+  "interpretationStronglyLiked": "molto apprezzato",
+  "lastUpdated": "Ultimo aggiornamento del profilo di apprendimento: {date}",
+  "loadError": "Caricamento dati di apprendimento fallito. Riprova.",
+  "noData": {
+    "alreadyGaveFeedback": "Hai già dato feedback? Clicca \"Calcola ora\" per elaborarli.",
+    "computeNow": "Calcola ora",
+    "computing": "Calcolo in corso...",
+    "description": "Inizia accettando o rifiutando suggerimenti di outfit e valutandoli.",
+    "getOutfitSuggestions": "Ottieni suggerimenti outfit",
+    "title": "Nessun dato di apprendimento ancora"
+  },
+  "occasionPatterns": {
+    "description": "Cosa funziona per diverse occasioni",
+    "title": "Pattern per occasione"
+  },
+  "percent": "{value}%",
+  "preferredColors": "Colori preferiti:",
+  "recompute": "Ricalcola",
+  "stats": {
+    "acceptanceRate": "Tasso di accettazione",
+    "averageRating": "Valutazione media",
+    "feedbackGiven": "Feedback dati",
+    "notEnoughData": "Dati insufficienti",
+    "outOfStars": "su {max, plural, one {# stella} other {# stelle}}",
+    "outfitsRated": "{count, plural, one {{count} outfit valutato} other {{count} outfit valutati}}",
+    "rateMoreOutfits": "Valuta più outfit",
+    "rateOutfitStyles": "Valuta gli stili degli outfit",
+    "styleRating": "Valutazione stile",
+    "styleSatisfaction": "soddisfazione dello stile",
+    "suggestionsAccepted": "di suggerimenti accettati"
+  },
+  "styleInsights": {
+    "description": "Cosa abbiamo imparato sulle tue preferenze",
+    "generate": "Nuove analisi",
+    "title": "Analisi di stile"
+  },
+  "stylePreferences": {
+    "description": "Stili che corrispondono ai tuoi gusti",
+    "noData": "Non abbastanza feedback per determinare le preferenze di stile.",
+    "title": "Preferenze di stile apprese"
+  },
+  "subtitle": "Come l'IA impara dai tuoi feedback",
+  "subtitleEmpty": "Inizia a valutare gli outfit per aiutare l'IA a imparare le tue preferenze",
+  "successRate": "{percent}% di successo",
+  "suggestedUpdates": {
+    "addToAvoid": "Aggiungi ai colori da evitare:",
+    "addToFavorites": "Aggiungi ai colori preferiti:",
+    "description": "In base ai tuoi feedback, ti suggeriamo di aggiornare le tue preferenze",
+    "title": "Aggiornamenti preferenze suggeriti",
+    "updatePreferences": "Aggiorna preferenze"
+  },
+  "timesPaired": "{count}x abbinato",
+  "title": "Apprendimento IA",
+  "weatherPreferences": {
+    "description": "Come ti vesti per diverse condizioni",
+    "layers": "~{count} strati",
+    "title": "Preferenze meteo"
+  },
+  "weatherTypeCold": "Freddo",
+  "weatherTypeCool": "Fresco",
+  "weatherTypeHot": "Caldo",
+  "weatherTypeMild": "Mite"
+}

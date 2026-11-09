@@ -1,0 +1,178 @@
+# Every process built from the backend image loads the same Settings, so they all
+# merge this one block. A key added to a single service never reaches the others,
+# and the worker that sends notifications needs APP_URL and SMTP_* as much as the API.
+x-backend-env: &backend-env
+  DEBUG: ${DEBUG:-false}
+  PUID: ${PUID:-1000}
+  PGID: ${PGID:-1000}
+  DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-wardrobe}:${POSTGRES_PASSWORD:-wardrobe}@postgres:5432/${POSTGRES_DB:-wardrobe}
+  REDIS_URL: redis://redis:6379/0
+  SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+  STORAGE_PATH: /data/wardrobe
+  APP_URL: ${APP_URL:-}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  AI_BASE_URL: ${AI_BASE_URL:-http://host.docker.internal:11434/v1}
+  AI_API_KEY: ${AI_API_KEY:-}
+  AI_VISION_MODEL: ${AI_VISION_MODEL:-gpt-4o}
+  AI_TEXT_MODEL: ${AI_TEXT_MODEL:-gpt-4o}
+  AI_TIMEOUT: ${AI_TIMEOUT:-}
+  AI_MAX_RETRIES: ${AI_MAX_RETRIES:-3}
+  AI_TAGGING_CONCURRENCY: ${AI_TAGGING_CONCURRENCY:-1}
+  AI_RETRY_COOLDOWN_SECONDS: ${AI_RETRY_COOLDOWN_SECONDS:-}
+  AI_INTERNAL_ENABLED: ${AI_INTERNAL_ENABLED:-true}
+  AI_VISION_ENABLED: ${AI_VISION_ENABLED:-}
+  AI_TEXT_ENABLED: ${AI_TEXT_ENABLED:-}
+  AI_REASONING_EFFORT: ${AI_REASONING_EFFORT:-none}
+  MAX_IMAGE_MEGAPIXELS: ${MAX_IMAGE_MEGAPIXELS:-50}
+  MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-}
+  MAX_BULK_ACTION_COUNT: ${MAX_BULK_ACTION_COUNT:-}
+  NTFY_SERVER: ${NTFY_SERVER:-}
+  NTFY_TOKEN: ${NTFY_TOKEN:-}
+  SMTP_HOST: ${SMTP_HOST:-}
+  SMTP_PORT: ${SMTP_PORT:-}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  SMTP_USE_TLS: ${SMTP_USE_TLS:-}
+  SMTP_FROM_NAME: ${SMTP_FROM_NAME:-}
+  SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-}
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: wardrobe-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-wardrobe}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wardrobe}
+      POSTGRES_DB: ${POSTGRES_DB:-wardrobe}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-wardrobe}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis for job queue
+  redis:
+    image: redis:7-alpine
+    container_name: wardrobe-redis
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # FastAPI Backend
+  backend:
+    image: ghcr.io/anyesh/wardrowbe:backend-latest
+    container_name: wardrobe-backend
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      <<: *backend-env
+      CORS_ORIGINS: '["http://localhost:3000", "http://frontend:3000"]'
+      OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+      OIDC_CA_BUNDLE: ${OIDC_CA_BUNDLE:-}
+      FORWARD_AUTH_SECRET: ${FORWARD_AUTH_SECRET:-}
+      # 0 because clients reach the frontend and API directly here, so any X-Forwarded-For is
+      # theirs; set 1 once a proxy is the only way in (README: Client IPs behind a reverse proxy)
+      TRUSTED_PROXY_COUNT: ${TRUSTED_PROXY_COUNT:-0}
+    volumes:
+      - wardrobe_data:/data/wardrobe
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Next.js Frontend
+  frontend:
+    image: ghcr.io/anyesh/wardrowbe:frontend-latest
+    container_name: wardrobe-frontend
+    environment:
+      # NEXT_PUBLIC_API_URL is the pre-1.6 name, still honored so existing .env files keep working.
+      BACKEND_URL: ${BACKEND_URL:-${NEXT_PUBLIC_API_URL:-http://backend:8000}}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-change-me-in-production}
+      DEV_MODE: ${DEBUG:-false}
+      OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+      OIDC_END_SESSION_URL: ${OIDC_END_SESSION_URL:-}
+      FORWARD_AUTH_LOGOUT_URL: ${FORWARD_AUTH_LOGOUT_URL:-}
+      TINYAUTH_URL: ${TINYAUTH_URL:-}
+      FORWARD_AUTH_SECRET: ${FORWARD_AUTH_SECRET:-}
+      NODE_EXTRA_CA_CERTS: ${NODE_EXTRA_CA_CERTS:-}
+      PUID: ${PUID:-1001}
+      PGID: ${PGID:-1001}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+# Background Worker for AI Tagging
+  worker:
+    image: ghcr.io/anyesh/wardrowbe:backend-latest
+    container_name: wardrobe-worker
+    command: arq app.workers.worker.WorkerSettings
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      <<: *backend-env
+    volumes:
+      - wardrobe_data:/data/wardrobe
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+# Local image work (rotation, background removal) on its own queue, so a bulk
+# batch of it cannot block AI tagging behind it.
+  image-worker:
+    image: ghcr.io/anyesh/wardrowbe:backend-latest
+    container_name: wardrobe-image-worker
+    command: arq app.workers.image_worker.ImageWorkerSettings
+    environment:
+      <<: *backend-env
+      IMAGE_WORKER_CONCURRENCY: ${IMAGE_WORKER_CONCURRENCY:-1}
+      BG_REMOVAL_PROVIDER: ${BG_REMOVAL_PROVIDER:-rembg}
+      BG_REMOVAL_MODEL: ${BG_REMOVAL_MODEL:-u2net}
+      BG_REMOVAL_URL: ${BG_REMOVAL_URL:-}
+      BG_REMOVAL_API_KEY: ${BG_REMOVAL_API_KEY:-}
+    volumes:
+      - wardrobe_data:/data/wardrobe
+      - rembg_models:/opt/rembg/models
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  wardrobe_data:
+  rembg_models:

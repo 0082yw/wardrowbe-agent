@@ -1,0 +1,60 @@
+repos:
+  # Backend: Ruff linting and formatting
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^backend/
+      - id: ruff-format
+        files: ^backend/
+
+  # Frontend: TypeScript and ESLint
+  - repo: local
+    hooks:
+      - id: frontend-typecheck
+        name: Frontend TypeScript check
+        entry: bash -c 'cd frontend && npx tsc --noEmit'
+        language: system
+        files: ^frontend/.*\.(ts|tsx)$
+        pass_filenames: false
+
+      - id: frontend-lint
+        name: Frontend ESLint
+        entry: bash -c 'cd frontend && npm run lint'
+        language: system
+        files: ^frontend/.*\.(ts|tsx)$
+        pass_filenames: false
+
+      # t() takes a plain string, so a missing translation key type-checks, lints and tests
+      # clean, then renders as a raw key path to the user. These three gates are the only
+      # thing that catches it.
+      - id: i18n-keys
+        name: i18n keys resolve
+        entry: bash -c 'cd frontend && node scripts/i18n-keys.mjs'
+        language: system
+        files: ^frontend/(app|components|lib|messages)/
+        pass_filenames: false
+
+      - id: i18n-parity
+        name: i18n locale parity
+        entry: bash -c 'cd frontend && node scripts/i18n-check.mjs'
+        language: system
+        files: ^frontend/messages/
+        pass_filenames: false
+
+      - id: i18n-scan
+        name: i18n no hardcoded strings
+        entry: bash -c 'cd frontend && node scripts/i18n-scan.mjs'
+        language: system
+        files: ^frontend/(app|components|lib)/.*\.tsx?$
+        pass_filenames: false
+
+      # frontend/lib/generated is written from the backend JSON data files, so editing either side
+      # without regenerating leaves the two disagreeing.
+      - id: shared-data
+        name: generated shared data up to date
+        entry: bash -c 'cd frontend && node scripts/gen-shared-data.mjs --check'
+        language: system
+        files: ^(backend/app/data/.*\.json|frontend/(lib/generated/.*\.ts|scripts/gen-shared-data\.mjs))$
+        pass_filenames: false

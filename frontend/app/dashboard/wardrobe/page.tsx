@@ -1,0 +1,997 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import Image from 'next/image';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Plus, Search, Heart, Grid3X3, Loader2, AlertCircle, RefreshCw, Droplets, ArrowUpDown, SlidersHorizontal, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { AddItemDialog } from '@/components/add-item-dialog';
+import { AnalysisQueuePanel } from '@/components/analysis-queue-panel';
+import { ItemDetailDialog } from '@/components/item-detail-dialog';
+import { BulkActionToolbar, BulkSelection } from '@/components/bulk-action-toolbar';
+import { useItems, useItem, useItemTypes, useReanalyzeItem, useCancelAnalysis, useBulkDeleteItems, useBulkReanalyzeItems, useBulkCancelAnalysis, useBulkRotateItems, useBulkRemoveBackgroundItems, useRemoveBackground, useTaggingProgress, BulkOperationParams, tagProcessingLabel, formatAnalyzingElapsed, deriveQueueSummary } from '@/lib/hooks/use-items';
+import { useUserTimezone } from '@/lib/hooks/use-user';
+import { colorSwatch, normalizeColor } from '@/lib/colors';
+import { Item } from '@/lib/types';
+import { useClothingTypes, useClothingColors, useSubtypeLabel, useTypeLabel } from '@/lib/hooks/use-translated-constants';
+import { toast } from 'sonner';
+import { formatWornAgo, getWornAgoColorClass } from '@/lib/utils';
+import { DEFAULT_PAGE_SIZE } from '@/lib/pagination';
+import { useTranslations } from 'next-intl';
+
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+
+const SORT_OPTIONS = [
+  { value: 'created_at', order: 'desc' as const },
+  { value: 'created_at', order: 'asc' as const },
+  { value: 'last_worn', order: 'desc' as const },
+  { value: 'last_worn', order: 'asc' as const },
+  { value: 'wear_count', order: 'desc' as const },
+  { value: 'wear_count', order: 'asc' as const },
+  { value: 'name', order: 'asc' as const },
+  { value: 'name', order: 'desc' as const },
+] as const;
+
+const SORT_LABEL_KEYS = [
+  'newestFirst', 'oldestFirst', 'recentlyWorn', 'leastRecentlyWorn',
+  'mostWorn', 'leastWorn', 'nameAZ', 'nameZA',
+] as const;
+
+function ItemCard({
+  item,
+  selected,
+  onSelect,
+  onRetry,
+  onRetryBackgroundRemoval,
+  onCancelAnalysis,
+  onClick,
+  onDismissError,
+  errorDismissed,
+  userTimezone,
+}: {
+  item: Item;
+  selected: boolean;
+  onSelect: (id: string, checked: boolean) => void;
+  onRetry?: (id: string) => void;
+  onRetryBackgroundRemoval?: (id: string) => void;
+  onCancelAnalysis?: (id: string) => void;
+  onClick?: () => void;
+  onDismissError?: (id: string) => void;
+  errorDismissed?: boolean;
+  userTimezone: string;
+}) {
+  const typeLabel = useTypeLabel();
+  const t = useTranslations('wardrobe');
+  const tc = useTranslations('common');
+  const clothingColors = useClothingColors();
+  const subtypeLabel = useSubtypeLabel();
+  const primaryColor = item.primary_color ? normalizeColor(item.primary_color) : null;
+  const colorName = clothingColors.find((c) => c.value === primaryColor)?.name ?? item.primary_color;
+  const isProcessing = item.status === 'processing';
+  const isError = item.status === 'error' && !errorDismissed;
+  const isBackgroundRemovalKind = item.processing_kind === 'background_removal';
+  const isRotateKind = item.processing_kind === 'rotate';
+  // Neither rotation nor background removal touches AI tagging, so their
+  // failures must not be reported as an analysis failure or offer its retry.
+  const isImageOpKind = isBackgroundRemovalKind || isRotateKind;
+
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
+  return (
+    <Card
+      className={`group overflow-hidden cursor-pointer transition-all ${
+        selected ? 'ring-2 ring-primary shadow-md' : 'hover:shadow-md'
+      }`}
+      onClick={onClick}
+    >
+      <div className="relative aspect-square bg-muted">
+        {item.thumbnail_url ? (
+          <Image
+            src={item.thumbnail_url}
+            alt={item.name || typeLabel(item.type)}
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
+            {typeLabel(item.type)}
+          </div>
+        )}
+        {/* Checkbox in top-left */}
+        <div
+          className={`absolute top-2 left-2 z-10 transition-opacity ${
+            selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          }`}
+          onClick={handleCheckboxClick}
+        >
+          <Checkbox
+            checked={selected}
+            onCheckedChange={(checked) => onSelect(item.id, checked === true)}
+            className="bg-background/80 backdrop-blur-sm"
+          />
+        </div>
+        {item.favorite && (
+          <div className="absolute top-2 right-2 z-10">
+            <Heart className="h-4 w-4 fill-red-500 text-red-500" />
+          </div>
+        )}
+        {item.needs_wash && (
+          <div className="absolute bottom-2 right-2 z-10">
+            <div className="bg-amber-500/90 text-white rounded-full p-1" title={t('needsWash')}>
+              <Droplets className="h-3.5 w-3.5" />
+            </div>
+          </div>
+        )}
+        {isProcessing && (
+          <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2">
+            <Loader2 className="h-6 w-6 text-white animate-spin" />
+            <span className="text-white text-xs font-medium">
+              {(() => {
+                const label = tagProcessingLabel(item);
+                if (label === 'removing_background') {
+                  return item.ai_started_at
+                    ? t('ai.removingBackgroundElapsed', {
+                        elapsed: formatAnalyzingElapsed(item.ai_started_at),
+                      })
+                    : t('ai.removeBackgroundQueued');
+                }
+                if (label === 'rotating') {
+                  return item.ai_started_at ? t('ai.rotating') : t('ai.rotateQueued');
+                }
+                return label === 'analyzing' && item.ai_started_at
+                  ? t('ai.analyzingElapsed', { elapsed: formatAnalyzingElapsed(item.ai_started_at) })
+                  : t('ai.queued');
+              })()}
+            </span>
+            {onCancelAnalysis && (
+              <Button requiresWrite
+                size="sm"
+                variant="secondary"
+                className="h-7 text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onCancelAnalysis(item.id);
+                }}
+              >
+                <X className="h-3 w-3 mr-1" />
+                {tc('cancel')}
+              </Button>
+            )}
+          </div>
+        )}
+        {isError && (
+          <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-2 p-2">
+            <AlertCircle className="h-6 w-6 text-red-400" />
+            <span className="text-white text-xs font-medium text-center">
+              {isBackgroundRemovalKind
+                ? t('ai.backgroundRemovalFailed')
+                : isRotateKind
+                  ? t('ai.rotateFailed')
+                  : t('ai.analysisFailed')}
+            </span>
+            {!isImageOpKind && item.ai_error && (
+              <span
+                className="text-white/70 text-[10px] text-center line-clamp-2 px-1"
+                title={item.ai_error}
+              >
+                {item.ai_error}
+              </span>
+            )}
+            <div className="flex gap-1.5">
+              {(() => {
+                // No retry for a failed rotation: the direction the user
+                // picked is not recorded anywhere, so a one-click retry would
+                // have to guess it and could turn the image the wrong way.
+                // They re-select and rotate again from the bulk toolbar.
+                const retry = isRotateKind
+                  ? undefined
+                  : isBackgroundRemovalKind
+                    ? onRetryBackgroundRemoval
+                    : onRetry;
+                if (!retry) return null;
+                return (
+                  <Button requiresWrite
+                    size="sm"
+                    variant="secondary"
+                    className="h-7 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      retry(item.id);
+                    }}
+                  >
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    {tc('retry')}
+                  </Button>
+                );
+              })()}
+              {onDismissError && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="h-7 w-7 p-0"
+                  title={t('ai.dismiss')}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDismissError(item.id);
+                  }}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+      <CardContent className="p-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="font-medium text-sm truncate">
+              {item.name || typeLabel(item.type)}
+            </p>
+            <p className="text-xs text-muted-foreground capitalize">
+              {typeLabel(item.type)}
+              {item.subtype && ` • ${subtypeLabel(item.subtype)}`}
+              {item.tags?.logprobs_confidence != null && ` · ${t('ai.confident', { percent: Math.round(item.tags.logprobs_confidence * 100) })}`}
+            </p>
+          </div>
+          {item.primary_color && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div
+                    className="w-4 h-4 rounded-full border shrink-0"
+                    style={{ backgroundColor: colorSwatch(item.primary_color) }}
+                  />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{colorName}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
+        {item.last_worn_at ? (
+          <p className={`text-xs mt-1 ${getWornAgoColorClass(item.last_worn_at, userTimezone)}`}>
+            {formatWornAgo(item.last_worn_at, userTimezone, t)}
+          </p>
+        ) : item.wear_count > 0 ? (
+          <p className="text-xs text-muted-foreground mt-1">
+            {t('wearCount', { count: item.wear_count })}
+          </p>
+        ) : null}
+        {item.ai_confidence !== undefined && item.ai_confidence > 0 && item.status === 'ready' && (
+          <p className="text-xs text-muted-foreground mt-1">
+            {t('ai.completeness', { percent: Math.round(item.ai_confidence * 100) })}
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ItemCardSkeleton() {
+  return (
+    <Card className="overflow-hidden">
+      <Skeleton className="aspect-square" />
+      <CardContent className="p-3">
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-3 w-1/2 mt-1" />
+      </CardContent>
+    </Card>
+  );
+}
+
+function EmptyWardrobe({ onAddClick }: { onAddClick: () => void }) {
+  const t = useTranslations('wardrobe');
+
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+      <div className="rounded-full bg-muted p-6 mb-4">
+        <Grid3X3 className="h-12 w-12 text-muted-foreground" />
+      </div>
+      <h3 className="text-lg font-semibold mb-2">{t('empty.title')}</h3>
+      <p className="text-muted-foreground mb-6 max-w-sm">
+        {t('empty.description')}
+      </p>
+      <Button requiresWrite="create" onClick={onAddClick}>
+        <Plus className="mr-2 h-4 w-4" />
+        {t('empty.addFirstItem')}
+      </Button>
+    </div>
+  );
+}
+
+export default function WardrobePage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const userTimezone = useUserTimezone();
+  const t = useTranslations('wardrobe');
+  const tc = useTranslations('common');
+  const clothingTypes = useClothingTypes();
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [queuePanelOpen, setQueuePanelOpen] = useState(false);
+  const [selection, setSelection] = useState<BulkSelection>({
+    mode: 'none',
+    selectedIds: new Set(),
+    excludedIds: new Set(),
+  });
+  const [detailItemId, setDetailItemId] = useState<string | null>(null);
+  const [search, setSearch] = useState(() => searchParams.get('search') ?? '');
+  const [typeFilter, setTypeFilter] = useState<string>(() => searchParams.get('type') ?? 'all');
+  const [archiveFilter, setArchiveFilter] = useState(() => searchParams.get('archived') === 'true');
+  const [sortIndex, setSortIndex] = useState(() => {
+    const raw = Number(searchParams.get('sort'));
+    return Number.isInteger(raw) && raw >= 0 && raw < SORT_OPTIONS.length ? raw : 0;
+  });
+  const [needsWash, setNeedsWash] = useState<boolean | undefined>(() =>
+    searchParams.get('needsWash') === 'true' ? true : undefined
+  );
+  const [favoriteFilter, setFavoriteFilter] = useState<boolean | undefined>(() =>
+    searchParams.get('favorite') === 'true' ? true : undefined
+  );
+  const [showFilters, setShowFilters] = useState(false);
+  const [page, setPage] = useState(() => {
+    const raw = Number(searchParams.get('page'));
+    return Number.isInteger(raw) && raw > 0 ? raw : 1;
+  });
+  const [pageSize, setPageSize] = useState(() => {
+    const raw = Number(searchParams.get('pageSize'));
+    return PAGE_SIZE_OPTIONS.includes(raw) ? raw : DEFAULT_PAGE_SIZE;
+  });
+  const [dismissedErrors, setDismissedErrors] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set();
+    try {
+      const raw = window.sessionStorage.getItem('wardrobe-dismissed-errors');
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem(
+        'wardrobe-dismissed-errors',
+        JSON.stringify(Array.from(dismissedErrors))
+      );
+    } catch {
+      // because sessionStorage can be unavailable (private browsing, quota), dismissal just won't persist
+    }
+  }, [dismissedErrors]);
+
+  // Open item detail dialog from URL param (e.g. ?item=uuid from outfit pages)
+  useEffect(() => {
+    const itemParam = searchParams.get('item');
+    if (itemParam && !detailItemId) {
+      setDetailItemId(itemParam);
+    }
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Keep filters/page/sort in the URL so a refresh or shared link preserves them
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (search) params.set('search', search); else params.delete('search');
+    if (typeFilter !== 'all') params.set('type', typeFilter); else params.delete('type');
+    if (archiveFilter) params.set('archived', 'true'); else params.delete('archived');
+    if (sortIndex !== 0) params.set('sort', String(sortIndex)); else params.delete('sort');
+    if (needsWash) params.set('needsWash', 'true'); else params.delete('needsWash');
+    if (favoriteFilter) params.set('favorite', 'true'); else params.delete('favorite');
+    if (page !== 1) params.set('page', String(page)); else params.delete('page');
+    if (pageSize !== DEFAULT_PAGE_SIZE) params.set('pageSize', String(pageSize)); else params.delete('pageSize');
+
+    const next = params.toString();
+    if (next !== searchParams.toString()) {
+      router.replace(next ? `/dashboard/wardrobe?${next}` : '/dashboard/wardrobe', { scroll: false });
+    }
+  }, [search, typeFilter, archiveFilter, sortIndex, needsWash, favoriteFilter, page, pageSize, searchParams, router]);
+
+  const sortOption = SORT_OPTIONS[sortIndex];
+
+  const filters = {
+    search: search || undefined,
+    type: typeFilter !== 'all' ? typeFilter : undefined,
+    needs_wash: needsWash,
+    favorite: favoriteFilter,
+    is_archived: archiveFilter,
+    sort_by: sortOption.value,
+    sort_order: sortOption.order,
+  };
+
+  const activeFilterCount = [
+    needsWash !== undefined,
+    favoriteFilter !== undefined,
+    typeFilter !== 'all',
+    archiveFilter,
+  ].filter(Boolean).length;
+
+  // Fetch items with automatic polling (faster when items are processing)
+  const { data, isLoading, error } = useItems(filters, page, pageSize);
+  const { data: taggingProgress } = useTaggingProgress();
+  const { data: itemTypes } = useItemTypes();
+  const reanalyze = useReanalyzeItem();
+  const cancelAnalysis = useCancelAnalysis();
+  const bulkDelete = useBulkDeleteItems();
+  const bulkReanalyze = useBulkReanalyzeItems();
+  const bulkCancelAnalysis = useBulkCancelAnalysis();
+  const bulkRotate = useBulkRotateItems();
+  const bulkRemoveBackground = useBulkRemoveBackgroundItems();
+  const removeBackground = useRemoveBackground();
+
+  const items = data?.items || [];
+  const total = data?.total || 0;
+
+  // Get selected item: try from list first, then fetch individually (for deep-link from outfit pages)
+  const listItem = detailItemId ? items.find((i) => i.id === detailItemId) || null : null;
+  const { data: fetchedItem } = useItem(detailItemId && !listItem ? detailItemId : '');
+  const detailItem = listItem || fetchedItem || null;
+
+  // Wardrobe-wide, from the server: counting the current page only capped the
+  // badge at the page size, so a 100-image upload still read "20 analyzing".
+  const queuedCount = taggingProgress?.queued ?? 0;
+  const analyzingCount = taggingProgress?.analyzing ?? 0;
+  // Failures come from the server for the same reason the other two do, but
+  // dismissal is keyed on `${id}:${updated_at}` and only the current page
+  // carries those versions, so off-page failures stay counted until seen.
+  const dismissedOnPage = items.filter(
+    (i) =>
+      i.status === 'error' &&
+      i.processing_kind !== 'background_removal' &&
+      i.processing_kind !== 'rotate' &&
+      dismissedErrors.has(`${i.id}:${i.updated_at}`)
+  ).length;
+  const errorCount = Math.max(0, (taggingProgress?.failed ?? 0) - dismissedOnPage);
+  const queueSummary = deriveQueueSummary(taggingProgress);
+
+  // Clear selection when filters change (but not page - allow cross-page selection)
+  useEffect(() => {
+    setSelection({ mode: 'none', selectedIds: new Set(), excludedIds: new Set() });
+  }, [search, typeFilter, archiveFilter, needsWash, favoriteFilter, sortIndex]);
+
+  const handleRetry = (itemId: string) => {
+    reanalyze.mutate(itemId, {
+      onSuccess: (data) => {
+        if (data.status === 'cooldown' && data.retry_after_seconds) {
+          toast.info(t('ai.retryCooldown', { seconds: data.retry_after_seconds }));
+        }
+      },
+    });
+  };
+
+  const handleRetryBackgroundRemoval = (itemId: string) => {
+    removeBackground.mutate({ id: itemId });
+  };
+
+
+  const handleCancelAnalysis = (itemId: string) => {
+    cancelAnalysis.mutate(itemId);
+  };
+
+  const handleDismissError = (itemId: string) => {
+    const item = items.find((i) => i.id === itemId);
+    if (!item) return;
+    setDismissedErrors((prev) => new Set(prev).add(`${item.id}:${item.updated_at}`));
+  };
+
+  const handleSelect = (id: string, checked: boolean) => {
+    setSelection((prev) => {
+      if (prev.mode === 'all') {
+        // In "select all" mode, toggle exclusion
+        const next = new Set(prev.excludedIds);
+        if (checked) {
+          next.delete(id); // Remove from excluded = selected
+        } else {
+          next.add(id); // Add to excluded = deselected
+        }
+        return { ...prev, excludedIds: next };
+      } else {
+        // In "some" or "none" mode, toggle selection
+        const next = new Set(prev.selectedIds);
+        if (checked) {
+          next.add(id);
+        } else {
+          next.delete(id);
+        }
+        return { mode: next.size > 0 ? 'some' : 'none', selectedIds: next, excludedIds: new Set() };
+      }
+    });
+  };
+
+  const handleSelectPage = () => {
+    setSelection((prev) => {
+      const pageFullySelected =
+        (prev.mode === 'all' && prev.excludedIds.size === 0) ||
+        (prev.mode === 'some' && prev.selectedIds.size === items.length && items.length > 0);
+      if (pageFullySelected) {
+        return { mode: 'none', selectedIds: new Set(), excludedIds: new Set() };
+      }
+      return { mode: 'some', selectedIds: new Set(items.map((i) => i.id)), excludedIds: new Set() };
+    });
+  };
+
+  const handleSelectAllMatching = () => {
+    setSelection({ mode: 'all', selectedIds: new Set(), excludedIds: new Set() });
+  };
+
+  const handleClearSelection = () => {
+    setSelection({ mode: 'none', selectedIds: new Set(), excludedIds: new Set() });
+  };
+
+  // Build bulk operation params from selection state
+  const getBulkParams = (): BulkOperationParams => {
+    if (selection.mode === 'all') {
+      return {
+        select_all: true,
+        excluded_ids: Array.from(selection.excludedIds),
+        filters: {
+          type: typeFilter !== 'all' ? typeFilter : undefined,
+          search: search || undefined,
+          needs_wash: needsWash,
+          favorite: favoriteFilter,
+          is_archived: archiveFilter,
+        },
+      };
+    } else {
+      return {
+        item_ids: Array.from(selection.selectedIds),
+      };
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const params = getBulkParams();
+    try {
+      const result = await bulkDelete.mutateAsync(params);
+      toast.success(t('bulkActions.deleteSuccess', { count: result.deleted }));
+      if (result.failed > 0) {
+        toast.error(t('bulkActions.deletePartialFailed', { count: result.failed }));
+      }
+      handleClearSelection();
+    } catch {
+      toast.error(t('bulkActions.deleteError'));
+    }
+  };
+
+  const handleBulkReanalyze = async () => {
+    const params = getBulkParams();
+    try {
+      const result = await bulkReanalyze.mutateAsync(params);
+      if (result.queued > 0) {
+        if (result.queued > 20) {
+          toast.success(t('bulkActions.reanalyzeMany', { count: result.queued }));
+        } else {
+          toast.success(t('bulkActions.reanalyzeQueued', { count: result.queued }));
+        }
+      }
+      if (result.skipped > 0) {
+        // A batch that's entirely already-processing must not read as a bare
+        // "0 items queued" success - surface the skip count explicitly.
+        toast.info(t('bulkActions.reanalyzeSkipped', { count: result.skipped }));
+      }
+      if (result.cooldown > 0) {
+        toast.info(t('bulkActions.reanalyzeCooldown', { count: result.cooldown }));
+      }
+      if (result.failed > 0) {
+        toast.error(t('bulkActions.reanalyzePartialFailed', { count: result.failed }));
+      }
+      handleClearSelection();
+    } catch {
+      toast.error(t('bulkActions.reanalyzeError'));
+    }
+  };
+
+  const handleCancelAllAnalysis = async () => {
+    try {
+      const result = await bulkCancelAnalysis.mutateAsync({ select_all: true });
+      if (result.cancelled > 0) {
+        toast.success(t('bulkActions.cancelAllQueued', { count: result.cancelled }));
+      }
+      if (result.errors.length > 0) {
+        toast.error(t('bulkActions.cancelAllError'));
+      }
+    } catch {
+      toast.error(t('bulkActions.cancelAllError'));
+    }
+  };
+
+  const handleBulkRotate = async (direction: 'cw' | 'ccw') => {
+    const params = getBulkParams();
+    try {
+      const result = await bulkRotate.mutateAsync({ ...params, direction });
+      if (result.queued > 0) {
+        toast.success(t('bulkActions.rotateQueued', { count: result.queued }));
+      }
+      if (result.skipped > 0) {
+        toast.info(t('bulkActions.rotateSkipped', { count: result.skipped }));
+      }
+      if (result.failed > 0) {
+        toast.error(t('bulkActions.rotatePartialFailed', { count: result.failed }));
+      }
+      handleClearSelection();
+    } catch {
+      toast.error(t('bulkActions.rotateError'));
+    }
+  };
+
+  const handleBulkRemoveBackground = async () => {
+    const params = getBulkParams();
+    try {
+      const result = await bulkRemoveBackground.mutateAsync(params);
+      if (result.queued > 0) {
+        toast.success(t('bulkActions.removeBackgroundQueued', { count: result.queued }));
+      }
+      if (result.skipped > 0) {
+        toast.info(t('bulkActions.removeBackgroundSkipped', { count: result.skipped }));
+      }
+      if (result.already_done > 0) {
+        toast.info(t('bulkActions.removeBackgroundAlreadyDone', { count: result.already_done }));
+      }
+      if (result.failed > 0) {
+        toast.error(t('bulkActions.removeBackgroundPartialFailed', { count: result.failed }));
+      }
+      handleClearSelection();
+    } catch {
+      toast.error(t('bulkActions.removeBackgroundError'));
+    }
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex items-center justify-between sm:justify-start gap-3">
+            <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
+            <Button requiresWrite="create" onClick={() => setAddDialogOpen(true)} className="sm:hidden" size="sm">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            {t('itemCount', { count: total })}
+          </p>
+          {(queuedCount > 0 || analyzingCount > 0 || errorCount > 0) && (
+            <div className="flex items-center gap-2 mt-2">
+              {analyzingCount > 0 && (
+                <Badge variant="secondary" className="gap-1 text-xs">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  {queueSummary.batchTotal > 0
+                    ? t('ai.analyzingProgress', {
+                        count: analyzingCount,
+                        percent: queueSummary.percentComplete,
+                      })
+                    : t('ai.analyzingCount', { count: analyzingCount })}
+                </Badge>
+              )}
+              {queuedCount > 0 && (
+                <Badge variant="secondary" className="gap-1 text-xs">
+                  {t('ai.queuedCount', { count: queuedCount })}
+                </Badge>
+              )}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 px-2 text-xs"
+                onClick={() => setQueuePanelOpen(true)}
+              >
+                {t('ai.queue.open')}
+              </Button>
+              {(queuedCount > 0 || analyzingCount > 0) && (
+                <Button requiresWrite
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 px-2 text-xs"
+                  disabled={bulkCancelAnalysis.isPending}
+                  onClick={handleCancelAllAnalysis}
+                >
+                  {t('ai.cancelAll')}
+                </Button>
+              )}
+              {errorCount > 0 && (
+                <Badge variant="destructive" className="gap-1 text-xs">
+                  <AlertCircle className="h-3 w-3" />
+                  {t('ai.failedCount', { count: errorCount })}
+                </Badge>
+              )}
+            </div>
+          )}
+        </div>
+        <Button requiresWrite="create" onClick={() => setAddDialogOpen(true)} className="hidden sm:flex">
+          <Plus className="mr-2 h-4 w-4" />
+          {t('actions.addItem')}
+        </Button>
+      </div>
+
+      <div className="space-y-3">
+        {/* Main row: search + sort + filter toggle */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={t('search')}
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="pl-9"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Select
+              value={String(sortIndex)}
+              onValueChange={(v) => {
+                setSortIndex(Number(v));
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 shrink-0" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SORT_OPTIONS.map((opt, i) => (
+                  <SelectItem key={i} value={String(i)}>
+                    {t(`sort.${SORT_LABEL_KEYS[i]}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant={showFilters || activeFilterCount > 0 ? 'default' : 'outline'}
+              size="icon"
+              className="shrink-0 relative"
+              onClick={() => setShowFilters((v) => !v)}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              {activeFilterCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant={archiveFilter ? 'default' : 'outline'} size="sm"
+            aria-pressed={archiveFilter} onClick={() => { setArchiveFilter(value => !value); setPage(1); }}>
+            {t(archiveFilter ? 'lifecycle.archivedItems' : 'lifecycle.showArchived')}
+          </Button>
+          {archiveFilter && <p className="text-xs text-muted-foreground">{t('lifecycle.archivedHint')}</p>}
+        </div>
+
+        {/* Expandable filter row */}
+        {showFilters && (
+          <div className="flex flex-wrap gap-2 items-center p-3 rounded-lg border bg-muted/30">
+            <Select
+              value={typeFilter}
+              onValueChange={(value) => {
+                setTypeFilter(value);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[150px] h-8 text-xs">
+                <SelectValue placeholder={t('allTypes')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('allTypes')}</SelectItem>
+                {clothingTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={String(pageSize)}
+              onValueChange={(value) => {
+                setPageSize(Number(value));
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[130px] h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PAGE_SIZE_OPTIONS.map((size) => (
+                  <SelectItem key={size} value={String(size)}>
+                    {t('pageSize', { count: size })}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Button
+              variant={needsWash === true ? 'default' : 'outline'}
+              size="sm"
+              className="h-8 text-xs gap-1.5"
+              onClick={() => {
+                setNeedsWash(needsWash === true ? undefined : true);
+                setPage(1);
+              }}
+            >
+              <Droplets className="h-3.5 w-3.5" />
+              {t('needsWash')}
+            </Button>
+
+            <Button
+              variant={favoriteFilter === true ? 'default' : 'outline'}
+              size="sm"
+              className="h-8 text-xs gap-1.5"
+              onClick={() => {
+                setFavoriteFilter(favoriteFilter === true ? undefined : true);
+                setPage(1);
+              }}
+            >
+              <Heart className="h-3.5 w-3.5" />
+              {t('favorites')}
+            </Button>
+
+            {activeFilterCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs gap-1 ml-auto"
+                onClick={() => {
+                  setTypeFilter('all');
+                setArchiveFilter(false);
+                  setNeedsWash(undefined);
+                  setFavoriteFilter(undefined);
+                  setPage(1);
+                }}
+              >
+                <X className="h-3 w-3" />
+                {t('clearFilters')}
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {error ? (
+        <div className="text-center py-8">
+          <p className="text-destructive">
+            {t('errors.loadFailed')}
+          </p>
+          <Button
+            variant="outline"
+            className="mt-4"
+            onClick={() => window.location.reload()}
+          >
+            {tc('retry')}
+          </Button>
+        </div>
+      ) : isLoading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {Array.from({ length: 10 }).map((_, i) => (
+            <ItemCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        archiveFilter ? (
+          <div className="space-y-3 py-8 text-center">
+            <p className="text-muted-foreground">{t('lifecycle.emptyArchived')}</p>
+            <Button type="button" variant="outline" onClick={() => { setArchiveFilter(false); setPage(1); }}>
+              {t('lifecycle.backToActive')}
+            </Button>
+          </div>
+        ) : search || typeFilter !== 'all' || needsWash !== undefined || favoriteFilter !== undefined ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">
+              {t('errors.noItemsFound')}
+            </p>
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={() => {
+                setSearch('');
+                setTypeFilter('all');
+                setArchiveFilter(false);
+                setNeedsWash(undefined);
+                setFavoriteFilter(undefined);
+                setPage(1);
+              }}
+            >
+              {t('errors.clearFilters')}
+            </Button>
+          </div>
+        ) : (
+          <EmptyWardrobe onAddClick={() => setAddDialogOpen(true)} />
+        )
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 pb-20">
+          {items.map((item) => {
+            // Determine if item is selected based on selection mode
+            const isSelected = selection.mode === 'all'
+              ? !selection.excludedIds.has(item.id)
+              : selection.selectedIds.has(item.id);
+            return (
+              <ItemCard
+                key={item.id}
+                item={item}
+                selected={isSelected}
+                onSelect={handleSelect}
+                onRetry={handleRetry}
+                onRetryBackgroundRemoval={handleRetryBackgroundRemoval}
+                onCancelAnalysis={handleCancelAnalysis}
+                onClick={() => setDetailItemId(item.id)}
+                onDismissError={handleDismissError}
+                errorDismissed={dismissedErrors.has(`${item.id}:${item.updated_at}`)}
+                userTimezone={userTimezone}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      <BulkActionToolbar
+        selection={selection}
+        totalItems={total}
+        pageItems={items.length}
+        onSelectAll={handleSelectPage}
+        onSelectAllMatching={handleSelectAllMatching}
+        onClear={handleClearSelection}
+        onDelete={handleBulkDelete}
+        onReanalyze={handleBulkReanalyze}
+        onRotate={handleBulkRotate}
+        onRemoveBackground={handleBulkRemoveBackground}
+        isDeleting={bulkDelete.isPending}
+        isReanalyzing={bulkReanalyze.isPending}
+        isRotating={bulkRotate.isPending}
+        isRemovingBackground={bulkRemoveBackground.isPending}
+        variant="items"
+        pagination={{ page, pageSize, onPageChange: handlePageChange }}
+      />
+
+      <AddItemDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
+      <AnalysisQueuePanel
+        open={queuePanelOpen}
+        onOpenChange={setQueuePanelOpen}
+        progress={taggingProgress}
+        onRetry={handleRetry}
+        retryPending={reanalyze.isPending}
+      />
+      <ItemDetailDialog
+        item={detailItem}
+        open={!!detailItemId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDetailItemId(null);
+            // Clear only the ?item= param, keep filters/page/sort intact
+            if (searchParams.has('item')) {
+              const params = new URLSearchParams(searchParams.toString());
+              params.delete('item');
+              const next = params.toString();
+              router.replace(next ? `/dashboard/wardrobe?${next}` : '/dashboard/wardrobe', { scroll: false });
+            }
+          }
+        }}
+      />
+    </div>
+  );
+}

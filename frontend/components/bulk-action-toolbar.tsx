@@ -1,0 +1,332 @@
+'use client';
+
+import { X, Trash2, RefreshCw, Loader2, CheckSquare, Square, MinusSquare, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, RotateCcw, RotateCw, Eraser } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { useTranslations } from 'next-intl';
+
+export interface BulkSelection {
+  mode: 'none' | 'some' | 'all';
+  selectedIds: Set<string>;    // Used when mode is 'some'
+  excludedIds: Set<string>;    // Used when mode is 'all'
+}
+
+export type BulkDeleteVariant = 'items' | 'outfits';
+
+interface BulkActionToolbarProps {
+  selection: BulkSelection;
+  totalItems: number;
+  pageItems: number;
+  onSelectAll: () => void;
+  onSelectAllMatching: () => void;
+  onClear: () => void;
+  onDelete: () => void;
+  onReanalyze?: () => void;
+  onRotate?: (direction: 'cw' | 'ccw') => void;
+  onRemoveBackground?: () => void;
+  isDeleting?: boolean;
+  isReanalyzing?: boolean;
+  isRotating?: boolean;
+  isRemovingBackground?: boolean;
+  variant?: BulkDeleteVariant;
+  pagination?: BulkToolbarPagination;
+}
+
+export interface BulkToolbarPagination {
+  page: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+}
+
+export function BulkActionToolbar({
+  selection,
+  totalItems,
+  pageItems,
+  onSelectAll,
+  onSelectAllMatching,
+  onClear,
+  onDelete,
+  onReanalyze,
+  onRotate,
+  onRemoveBackground,
+  isDeleting = false,
+  isReanalyzing = false,
+  isRotating = false,
+  isRemovingBackground = false,
+  variant = 'items',
+  pagination,
+}: BulkActionToolbarProps) {
+  const t = useTranslations('common');
+  const tWardrobe = useTranslations('wardrobe');
+  const tOutfits = useTranslations('outfits');
+  // Each variant carries a whole delete sentence so that gendered and case-inflected
+  // languages are never handed a bare noun to splice into English grammar.
+  const tDelete = variant === 'outfits' ? tOutfits : tWardrobe;
+
+  const selectedCount = selection.mode === 'all'
+    ? totalItems - selection.excludedIds.size
+    : selection.selectedIds.size;
+
+  // Determine checkbox state
+  const isAllSelected =
+    (selection.mode === 'all' && selection.excludedIds.size === 0) ||
+    (selection.mode === 'some' && selection.selectedIds.size === pageItems && pageItems > 0);
+  const isPartiallySelected = selection.mode === 'all'
+    ? selection.excludedIds.size > 0
+    : selection.selectedIds.size > 0 && selection.selectedIds.size < pageItems;
+  const hasSelection = selectedCount > 0;
+  const isEverythingSelected = hasSelection && selectedCount === totalItems;
+  const canSelectAllMatching =
+    selection.mode === 'some' && selection.selectedIds.size === pageItems && pageItems > 0 && pageItems < totalItems;
+
+  const totalPages = pagination ? Math.ceil(totalItems / pagination.pageSize) : 0;
+
+  return (
+    <div className="fixed bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 sm:gap-3 bg-background border rounded-lg shadow-lg px-2 sm:px-4 py-2 sm:py-3 max-w-[calc(100vw-1rem)]">
+      {/* Select All Checkbox */}
+      <div
+        className="flex items-center gap-1 sm:gap-2 cursor-pointer shrink-0"
+        onClick={onSelectAll}
+      >
+        {isAllSelected ? (
+          <CheckSquare className="h-5 w-5 text-primary" />
+        ) : isPartiallySelected ? (
+          <MinusSquare className="h-5 w-5 text-primary" />
+        ) : (
+          <Square className="h-5 w-5 text-muted-foreground" />
+        )}
+        <span className="text-sm font-medium whitespace-nowrap hidden sm:inline">
+          {isEverythingSelected ? t('bulkActions.all') : t('selectAll')}
+        </span>
+      </div>
+
+      <div className="h-4 w-px bg-border shrink-0" />
+
+      <span className="text-sm text-muted-foreground whitespace-nowrap shrink-0">
+        {selectedCount === 0 ? (
+          <span className="hidden sm:inline">{t('bulkActions.noneSelected')}</span>
+        ) : selection.mode === 'all' && selection.excludedIds.size > 0 ? (
+          <>
+            <span className="sm:hidden">{totalItems - selection.excludedIds.size}</span>
+            <span className="hidden sm:inline">{t('bulkActions.allExcept', { count: selection.excludedIds.size })}</span>
+          </>
+        ) : selection.mode === 'all' ? (
+          <>
+            <span className="sm:hidden">{t('bulkActions.allShort', { count: totalItems })}</span>
+            <span className="hidden sm:inline">{t('bulkActions.allSelected', { count: totalItems })}</span>
+          </>
+        ) : (
+          <>
+            <span className="sm:hidden">{selectedCount}</span>
+            <span className="hidden sm:inline">{t('selected', { count: selectedCount })}</span>
+          </>
+        )}
+      </span>
+
+      {canSelectAllMatching && (
+        <Button
+          variant="link"
+          size="sm"
+          className="h-8 px-0 text-xs shrink-0 hidden sm:inline-flex"
+          onClick={onSelectAllMatching}
+        >
+          {t('bulkActions.selectAllMatching', { count: totalItems })}
+        </Button>
+      )}
+
+      {hasSelection && (
+        <>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClear}
+            className="text-muted-foreground h-8 w-8 shrink-0"
+            aria-label={t('bulkActions.clearSelection')}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+          <div className="h-4 w-px bg-border shrink-0" />
+          {onReanalyze && (
+            <Button requiresWrite
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={onReanalyze}
+              disabled={isReanalyzing}
+              aria-label={t('bulkActions.reanalyze')}
+            >
+              {isReanalyzing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+            </Button>
+          )}
+          {onRotate && (
+            <>
+              <Button requiresWrite
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={() => onRotate('ccw')}
+                disabled={isRotating}
+                aria-label={t('bulkActions.rotateCcw')}
+              >
+                {isRotating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="h-4 w-4" />
+                )}
+              </Button>
+              <Button requiresWrite
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                onClick={() => onRotate('cw')}
+                disabled={isRotating}
+                aria-label={t('bulkActions.rotateCw')}
+              >
+                {isRotating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RotateCw className="h-4 w-4" />
+                )}
+              </Button>
+            </>
+          )}
+          {onRemoveBackground && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button requiresWrite
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  disabled={isRemovingBackground}
+                  aria-label={t('bulkActions.removeBackground')}
+                >
+                  {isRemovingBackground ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Eraser className="h-4 w-4" />
+                  )}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    {tWardrobe('bulkActions.removeBackgroundConfirmTitle', { count: selectedCount })}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {tWardrobe('bulkActions.removeBackgroundConfirmDescription', {
+                      count: selectedCount,
+                    })}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                  <AlertDialogAction disabled onClick={onRemoveBackground}>
+                    {t('confirm')}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button requiresWrite variant="destructive" size="icon" className="h-8 w-8 shrink-0" disabled={isDeleting} aria-label={t('delete')}>
+                {isDeleting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {selection.mode === 'all' && selection.excludedIds.size === 0
+                    ? tDelete('bulkDelete.confirmTitleAll', { count: totalItems })
+                    : tDelete('bulkDelete.confirmTitle', { count: selectedCount })}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {tDelete('bulkDelete.confirmDescription')}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                <AlertDialogAction disabled
+                  onClick={onDelete}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {t('delete')}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
+      )}
+
+      {/* Pagination */}
+      {pagination && totalPages > 1 && (
+        <>
+          <div className="h-4 w-px bg-border shrink-0" />
+          <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 hidden sm:flex"
+              disabled={pagination.page === 1}
+              onClick={() => pagination.onPageChange(1)}
+              aria-label={t('firstPage')}
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              disabled={pagination.page === 1}
+              onClick={() => pagination.onPageChange(pagination.page - 1)}
+              aria-label={t('previousPage')}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="px-1 sm:px-2 text-sm text-muted-foreground whitespace-nowrap">
+              {pagination.page}/{totalPages}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              disabled={pagination.page >= totalPages}
+              onClick={() => pagination.onPageChange(pagination.page + 1)}
+              aria-label={t('nextPage')}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 hidden sm:flex"
+              disabled={pagination.page >= totalPages}
+              onClick={() => pagination.onPageChange(totalPages)}
+              aria-label={t('lastPage')}
+            >
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

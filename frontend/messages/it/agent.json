@@ -1,0 +1,101 @@
+{
+  "title": "Assistente outfit IA",
+  "description": "Consulta capi reali o fino a 3 outfit quotidiani, da lavoro o formali in base a colori, tipi e formalità registrati.",
+  "inputLabel": "Cosa vuoi indossare o cercare?",
+  "placeholder": "Comandi cinesi supportati: 帮我搭配一套日常穿搭 / 帮我搭配三套通勤穿搭，包含白色衬衫和蓝色牛仔裤 / 推荐正式穿搭",
+  "inputHelp": "Puoi modificare la richiesta durante la generazione; questo annulla l’anteprima precedente.",
+  "characterCount": "{count} / {max} caratteri",
+  "generate": "Genera anteprima",
+  "generating": "Generazione…",
+  "loading": "Ricerca nel guardaroba e preparazione dell’anteprima…",
+  "results": "Risultati dell’anteprima",
+  "reply": "Risposta dell’assistente",
+  "outfit": "Anteprima capo {number}",
+  "imageUnavailable": "Immagine non disponibile",
+  "unnamedItem": "Capo senza nome",
+  "itemType": "Tipo: {type}",
+  "reasoning": "Spiegazione della ricerca",
+  "styleNotes": "Note sull’anteprima",
+  "previewOnly": "Solo anteprime di singoli capi. I risultati non rappresentano un outfit completo e nessun outfit è stato salvato.",
+  "emptyState": "Descrivi la tua richiesta per iniziare.",
+  "status": {
+    "success": "Anteprima pronta",
+    "needs_clarification": "Servono più informazioni",
+    "no_items": "Nessun capo disponibile",
+    "invalid_result": "Risultato non valido"
+  },
+  "guidance": {
+    "needs_clarification": "Rispondi alla domanda dell’assistente con più dettagli, ad esempio i tipi di capi da cercare.",
+    "no_items": "Nessun capo disponibile trovato. Controlla i capi corrispondenti e il loro stato.",
+    "invalid_result": "Non è stato possibile convalidare l’anteprima. Generala di nuovo."
+  },
+  "errors": {
+    "blank": "Inserisci una richiesta.",
+    "tooLong": "La richiesta deve contenere al massimo 10.000 caratteri.",
+    "auth": "Accedi di nuovo per usare l’assistente.",
+    "invalidInput": "Richiesta rifiutata. Controlla il testo e riprova.",
+    "rateLimited": "Troppe richieste. Attendi prima di riprovare.",
+    "failed": "La richiesta di anteprima non è riuscita. Riprova.",
+    "invalidResponse": "Il servizio ha restituito un formato inatteso. Riprova."
+  },
+  "runtimeBadge": {
+    "unknown": "Modalità modello non confermata",
+    "configured": "Ollama locale configurato",
+    "unavailable": "Modello locale non disponibile",
+    "remoteConfigured": "Endpoint remoto raggiungibile",
+    "remoteUnavailable": "Modello remoto non disponibile"
+  },
+  "runtimeNotice": {
+    "unknown": "Anteprima di ricerca nel guardaroba in sola lettura. Il backend non ha confermato la modalità del modello. Nessun outfit viene salvato.",
+    "configured": "Il backend ha confermato Ollama locale qwen3:0.6b-cpu; il controllo non esegue inferenze. Sono supportate query sui capi e fino a 3 outfit di base quotidiani o da lavoro, verificati dal backend. Le anteprime non sono salvate. Usa gli esempi cinesi supportati.",
+    "unavailable": "Il backend segnala che il modello locale non è disponibile o che la configurazione CPU non è confermata. Questo controllo di stato non esegue il modello. Le anteprime restano in sola lettura.",
+    "remoteConfigured": "L’endpoint remoto è raggiungibile. Questo controllo non esegue inferenze e non verifica l’uso della GPU. Le anteprime non vengono salvate.",
+    "remoteUnavailable": "Il tunnel SSH o il servizio remoto non è disponibile. Controlla il tunnel creato manualmente e il servizio. Nessun ripiego automatico sul modello locale."
+  },
+  "outfitReasoning": "Motivo dell’abbinamento",
+  "outfitPreviewOnly": "Anteprima di base non salvata. Verifica l’occasione; meteo e materiali non vengono dedotti.",
+  "scene": {
+    "daily": "Outfit quotidiano",
+    "commute": "Outfit da lavoro",
+    "formal": "Outfit formale"
+  },
+  "roles": {
+    "base_top": "Parte superiore",
+    "bottom": "Parte inferiore",
+    "footwear": "Scarpe (facoltative)",
+    "outer_layer": "Giacca (facoltativa)"
+  },
+  "previewSelector": "Cambia anteprima",
+  "allPreviews": "Tutti gli outfit",
+  "selectPreview": "Outfit {number}",
+  "unsaved": "Anteprima non salvata",
+  "runtimeDetails": {
+    "label": "Stato dell’inferenza",
+    "localCpu": "CPU locale (local_cpu)",
+    "remoteGpu": "Modalità GPU remota (remote_gpu)",
+    "gpuUnverified": "L’esecuzione sulla GPU non è stata verificata; l’accelerazione GPU non è confermata.",
+    "gpuReadinessOnly": "Qui si verifica solo la disponibilità del servizio. La prova GPU appare nel risultato della richiesta."
+  },
+  "tunnelState": {
+    "connected": "Endpoint del tunnel SSH raggiungibile",
+    "disconnected": "Tunnel SSH disconnesso o servizio del modello non disponibile",
+    "unknown": "Stato dell’endpoint SSH non confermato"
+  },
+  "requestExecution": {
+    "label": "Esecuzione della richiesta",
+    "request": "Richiesta {id}",
+    "gpuVerified": "Questa richiesta è stata verificata sulla GPU remota autorizzata.",
+    "gpuUnverified": "Nessuna prova GPU attendibile è disponibile per questa richiesta.",
+    "copyFallback": "Alcuni testi usano un contenuto di riserva sicuro del backend.",
+    "proofLabel": "Prova GPU",
+    "proofExpired": "La prova è scaduta o non è verificabile ora. Questi sono campioni storici.",
+    "proofRequest": "ID richiesta",
+    "proofPid": "PID del modello",
+    "proofDevice": "UUID GPU",
+    "proofLayers": "Livelli caricati",
+    "proofMemory": "Memoria di processo massima campionata",
+    "proofMemoryValue": "{value, number} MiB",
+    "proofSamples": "Campioni",
+    "sampleScope": "I campioni coprono la finestra acquisita, non necessariamente il picco dell’intera richiesta."
+  }
+}

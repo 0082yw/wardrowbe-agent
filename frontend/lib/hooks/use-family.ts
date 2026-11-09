@@ -1,0 +1,185 @@
+'use client';
+
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSession } from 'next-auth/react';
+import { api } from '@/lib/api';
+import { useSetTokenIfAvailable, applySessionToken } from '@/lib/hooks/use-session-token';
+import { useUserProfile } from '@/lib/hooks/use-user';
+import { Family, FamilyCreateResponse, JoinFamilyResponse, FamilyMember } from '@/lib/types';
+import { queryKeys } from '@/lib/hooks/query-keys';
+
+export function useFamily() {
+  const { status } = useSession();
+  useSetTokenIfAvailable();
+
+  return useQuery({
+    queryKey: queryKeys.family,
+    queryFn: () => api.get<Family>('/families/me'),
+    enabled: status !== 'loading',
+    retry: false, // Don't retry on 404 (user not in family)
+  });
+}
+
+// Matched by user id because a member's email can change under them, for example when a
+// verified sign-in reclaims it and parks this account on a placeholder address.
+export function useCurrentFamilyMember(family: Family | undefined): {
+  member: FamilyMember | undefined;
+  isPending: boolean;
+  isError: boolean;
+} {
+  const { data: profile, isPending, isError } = useUserProfile();
+  return { member: family?.members.find((m) => m.id === profile?.id), isPending, isError };
+}
+
+export function useCreateFamily() {
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  return useMutation({
+    mutationFn: async (name: string) => {
+      applySessionToken(session);
+      return api.post<FamilyCreateResponse>('/families', { name });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.family });
+    },
+  });
+}
+
+export function useUpdateFamily() {
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  return useMutation({
+    mutationFn: async (name: string) => {
+      applySessionToken(session);
+      return api.patch<Family>('/families/me', { name });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.family });
+    },
+  });
+}
+
+export function useJoinFamily() {
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  return useMutation({
+    mutationFn: async (inviteCode: string) => {
+      applySessionToken(session);
+      return api.post<JoinFamilyResponse>('/families/join', { invite_code: inviteCode });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.family });
+    },
+  });
+}
+
+export function useJoinFamilyByToken() {
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  return useMutation({
+    mutationFn: async (token: string) => {
+      applySessionToken(session);
+      return api.post<JoinFamilyResponse>('/families/join-by-token', { token });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.family });
+    },
+  });
+}
+
+export function useLeaveFamily() {
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  return useMutation({
+    mutationFn: async () => {
+      applySessionToken(session);
+      return api.post<{ message: string }>('/families/me/leave');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.family });
+    },
+  });
+}
+
+export function useRegenerateInviteCode() {
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  return useMutation({
+    mutationFn: async () => {
+      applySessionToken(session);
+      return api.post<{ invite_code: string }>('/families/me/regenerate-code');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.family });
+    },
+  });
+}
+
+export function useInviteMember() {
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  return useMutation({
+    mutationFn: async ({ email, role }: { email: string; role?: string }) => {
+      applySessionToken(session);
+      return api.post<{ id: string; email: string; expires_at: string; email_sent: boolean }>(
+        '/families/me/invite',
+        { email, role: role || 'member' }
+      );
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.family });
+    },
+  });
+}
+
+export function useCancelInvite() {
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  return useMutation({
+    mutationFn: async (inviteId: string) => {
+      applySessionToken(session);
+      return api.delete(`/families/me/invites/${inviteId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.family });
+    },
+  });
+}
+
+export function useUpdateMemberRole() {
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  return useMutation({
+    mutationFn: async ({ memberId, role }: { memberId: string; role: string }) => {
+      applySessionToken(session);
+      return api.patch<FamilyMember>(`/families/me/members/${memberId}`, { role });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.family });
+    },
+  });
+}
+
+export function useRemoveMember() {
+  const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  return useMutation({
+    mutationFn: async (memberId: string) => {
+      applySessionToken(session);
+      return api.delete(`/families/me/members/${memberId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.family });
+    },
+  });
+}

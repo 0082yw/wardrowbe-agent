@@ -1,0 +1,69 @@
+{
+  "insightColorHeavy": "你的衣櫥以{color}為主（{percent}），試著增加一些變化吧！",
+  "insightGreatTaste": "品味真好！你採用了 {percent} 的建議。",
+  "insightLimitedColors": "你的衣櫥顏色種類不多，來嘗試新的顏色吧！",
+  "insightManyRejections": "你拒絕了不少建議，可以考慮更新你的風格偏好。",
+  "insightMoreBottomsThanTops": "你的下身比上身多，可以再添購一些襯衫！",
+  "insightMoreTopsThanBottoms": "你的上身遠多於下身，可以再添購一些長褲或裙子！",
+  "insightMostlyLayers": "你的上身多半是開襟衫、背心等內搭外的單品，補幾件基本款來搭配吧！",
+  "insightNeverWorn": "{count, plural, one {你有 # 件單品從未穿過，試著搭配看看吧！} other {你有 # 件單品從未穿過，試著搭配看看吧！}}",
+  "insightNoOutfitsThisWeek": "你這週還沒有產生任何穿搭，試著取得一個建議吧！",
+  "insightStartAdding": "先在衣櫥中新增一些單品吧！",
+  "insights": {
+    "acceptanceTrend": {
+      "description": "你對建議的回應趨勢",
+      "title": "接受率趨勢"
+    },
+    "colorDistribution": {
+      "description": "衣櫥中最常見的顏色",
+      "noData": "尚無顏色資料",
+      "title": "顏色分佈"
+    },
+    "itemTypes": {
+      "description": "依衣物類型分類",
+      "noData": "尚無單品",
+      "title": "單品類型"
+    },
+    "leastWorn": {
+      "description": "考慮穿穿這些",
+      "noData": "繼續記錄！",
+      "title": "最少穿著"
+    },
+    "mostWorn": {
+      "description": "你的最愛",
+      "noData": "開始記錄你的穿搭！",
+      "title": "最常穿著"
+    },
+    "neverWorn": {
+      "description": "該試試了？",
+      "noData": "所有單品都穿過了！",
+      "title": "從未穿過"
+    },
+    "title": "洞察"
+  },
+  "loadError": "載入分析失敗，請重試。",
+  "percent": "{value}%",
+  "stats": {
+    "acceptanceRate": {
+      "description": "建議已被接受",
+      "title": "接受率"
+    },
+    "avgRating": "平均評分：{rating}/5",
+    "outfitsGenerated": {
+      "description": "本週 {count} 套",
+      "title": "已產生穿搭"
+    },
+    "totalItems": {
+      "description": "{count} 件可穿",
+      "title": "總單品數"
+    },
+    "totalWears": {
+      "description": "記錄你的穿搭",
+      "noData": "尚無資料",
+      "title": "總穿著次數"
+    }
+  },
+  "subtitle": "你的衣櫥洞察與統計",
+  "title": "數據分析",
+  "wearCount": "{count} 次"
+}

@@ -1,0 +1,408 @@
+from datetime import date, datetime
+from decimal import Decimal
+from typing import Any, Literal
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
+
+from app.models.item import ProcessingKind, TaggingStatus
+from app.schemas.color import ColorList, ColorName
+from app.schemas.outfit import Occasion
+from app.utils.garment_vocabulary import DEFAULT_WASH_INTERVALS
+from app.utils.signed_urls import sign_image_url, sign_optional
+
+
+class ItemTags(BaseModel):
+    colors: ColorList = Field(default_factory=list)
+    primary_color: ColorName | None = None
+    pattern: str | None = None
+    material: str | None = None
+    style: list[str] = Field(default_factory=list)
+    season: list[str] = Field(default_factory=list)
+    formality: str | None = None
+    fit: str | None = None
+    # User-owned keys. The AI never emits these, so the tagging worker and
+    # ItemService.update must merge the tags JSONB rather than replace it.
+    size: str | None = Field(None, max_length=32)
+    care_instructions: str | None = Field(None, max_length=255)
+    source_url: str | None = Field(None, max_length=500)
+
+
+USER_TAG_KEYS = frozenset({"size", "care_instructions", "source_url"})
+
+
+class ItemBase(BaseModel):
+    type: str = Field(default="unknown", max_length=50)  # Default to unknown, AI will detect
+    subtype: str | None = Field(None, max_length=50)
+    name: str | None = Field(None, max_length=100)
+    brand: str | None = Field(None, max_length=100)
+    notes: str | None = None
+    purchase_date: date | None = None
+    purchase_price: Decimal | None = Field(None, ge=0)
+    favorite: bool = False
+
+
+class ItemCreate(ItemBase):
+    tags: ItemTags | None = None
+    colors: ColorList | None = None
+    primary_color: ColorName | None = None
+
+
+class ItemUpdate(BaseModel):
+    type: str | None = Field(None, min_length=1, max_length=50)
+    subtype: str | None = Field(None, max_length=50)
+    name: str | None = Field(None, max_length=100)
+    brand: str | None = Field(None, max_length=100)
+    notes: str | None = None
+    purchase_date: date | None = None
+    purchase_price: Decimal | None = Field(None, ge=0)
+    favorite: bool | None = None
+    tags: ItemTags | None = None
+    colors: ColorList | None = None
+    primary_color: ColorName | None = None
+    wash_interval: int | None = None
+
+
+class ItemResponse(ItemBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _surface_failure_reason(cls, data: Any) -> Any:
+        # ai_raw_response also carries successful raw model output, so only the
+        # error key is lifted out. Without this the UI can only say "Analysis
+        # Failed" with no way for the user to tell a bad model name from a
+        # dead endpoint.
+        raw = (
+            data.get("ai_raw_response")
+            if isinstance(data, dict)
+            else getattr(data, "ai_raw_response", None)
+        )
+        if isinstance(raw, dict):
+            # Same idea for a type the model named but the vocabulary rejected:
+            # lets the UI say "detected 'culottes', not a supported type" rather
+            # than a bare "unknown".
+            for src, dest in (("error", "ai_error"), ("unrecognized_type", "ai_unrecognized_type")):
+                if raw.get(src):
+                    if isinstance(data, dict):
+                        data[dest] = raw[src]
+                    else:
+                        setattr(data, dest, raw[src])
+        return data
+
+    id: UUID
+    user_id: UUID
+    image_path: str
+    thumbnail_path: str | None = None
+    medium_path: str | None = None
+    original_image_path: str | None = None
+    tags: dict = Field(default_factory=dict)
+    colors: list[str] = Field(default_factory=list)
+    primary_color: str | None = None
+    pattern: str | None = None
+    material: str | None = None
+    style: list[str] = Field(default_factory=list)
+    formality: str | None = None
+    season: list[str] = Field(default_factory=list)
+    status: str
+    ai_processed: bool = False
+    ai_confidence: Decimal | None = None
+    ai_description: str | None = None
+    ai_error: str | None = None
+    ai_unrecognized_type: str | None = None
+    ai_started_at: datetime | None = None
+    processing_kind: ProcessingKind | None = None
+    tagging_status: TaggingStatus = TaggingStatus.pending
+    tagged_by: str | None = None
+    tagged_at: datetime | None = None
+    wear_count: int = 0
+    last_worn_at: date | None = None
+    last_suggested_at: date | None = None
+    suggestion_count: int = 0
+    acceptance_count: int = 0
+    wears_since_wash: int = 0
+    last_washed_at: date | None = None
+    wash_interval: int | None = None
+    needs_wash: bool = False
+    additional_images: list["ItemImageResponse"] = Field(default_factory=list)
+    is_archived: bool = False
+    archived_at: datetime | None = None
+    archive_reason: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+    @computed_field
+    @property
+    def image_url(self) -> str:
+        return sign_image_url(self.image_path)
+
+    @computed_field
+    @property
+    def thumbnail_url(self) -> str | None:
+        return sign_optional(self.thumbnail_path)
+
+    @computed_field
+    @property
+    def medium_url(self) -> str | None:
+        return sign_optional(self.medium_path)
+
+    @computed_field
+    @property
+    def effective_wash_interval(self) -> int:
+        if self.wash_interval is not None:
+            return self.wash_interval
+        return DEFAULT_WASH_INTERVALS.get(self.type, 3)
+
+
+class AnalysisInProgress(BaseModel):
+    item_id: UUID
+    name: str | None = None
+    type: str
+    image_url: str | None = None
+    started_at: datetime
+
+
+class AnalysisCompletion(BaseModel):
+    item_id: UUID
+    name: str | None = None
+    type: str
+    duration_seconds: float | None = None
+    completed_at: datetime
+
+
+class AnalysisFailure(BaseModel):
+    item_id: UUID
+    name: str | None = None
+    type: str
+    error: str | None = None
+    failed_at: datetime | None = None
+
+
+class TaggingProgressResponse(BaseModel):
+    processing: int
+    queued: int
+    analyzing: int
+    failed: int
+    completed: int
+    total: int
+    # Scoped to the run the user is watching rather than the whole wardrobe, so
+    # an import into a populated wardrobe reads "1 of 90" instead of opening at
+    # 69% and creeping. See get_tagging_progress for how the run is anchored.
+    batch_total: int = 0
+    batch_completed: int = 0
+    batch_failed: int = 0
+    current: list[AnalysisInProgress] = Field(default_factory=list)
+    recent: list[AnalysisCompletion] = Field(default_factory=list)
+    failures: list[AnalysisFailure] = Field(default_factory=list)
+    avg_duration_seconds: float | None = None
+    eta_seconds: float | None = None
+    concurrency: int = 1
+
+
+class ItemListResponse(BaseModel):
+    items: list[ItemResponse]
+    total: int
+    page: int
+    page_size: int
+    has_more: bool
+
+
+class ItemFilter(BaseModel):
+    type: str | None = None
+    subtype: str | None = None
+    colors: ColorList | None = None
+    status: str | None = None
+    tagging_status: str | None = None
+    favorite: bool | None = None
+    needs_wash: bool | None = None
+    is_archived: bool = False
+    search: str | None = None
+    sort_by: str | None = None
+    sort_order: str = "desc"
+
+
+class LogWearRequest(BaseModel):
+    worn_at: date | None = None  # If None, use user's timezone to determine today
+    occasion: Occasion | None = None
+    notes: str | None = None
+
+
+class ArchiveRequest(BaseModel):
+    reason: str | None = Field(None, max_length=50)
+
+
+BulkUploadErrorCode = Literal[
+    "too_large", "unsupported_format", "duplicate", "invalid_image", "processing_failed"
+]
+
+
+class BulkUploadResult(BaseModel):
+    filename: str
+    success: bool
+    item: ItemResponse | None = None
+    error: str | None = None
+    error_code: BulkUploadErrorCode | None = None
+    duplicate: bool = False
+    existing_item_id: UUID | None = None
+
+
+class BulkUploadResponse(BaseModel):
+    total: int
+    successful: int
+    failed: int
+    results: list[BulkUploadResult]
+
+
+class BulkFilters(BaseModel):
+    type: str | None = None
+    search: str | None = None
+    is_archived: bool | None = None
+
+
+class BulkSelectionRequest(BaseModel):
+    # Explicit selection
+    item_ids: list[UUID] | None = None
+
+    # Select all with exceptions
+    select_all: bool = False
+    excluded_ids: list[UUID] | None = None
+    filters: BulkFilters | None = None
+
+    # Cursor into a select_all walk: the id the previous batch stopped at. Bulk
+    # actions are capped per request, so a wardrobe larger than the cap is
+    # walked batch by batch rather than rejected outright, which is the only
+    # option a client holding filters instead of ids has.
+    after_id: UUID | None = None
+
+    def model_post_init(self, __context):
+        if not self.select_all and not self.item_ids:
+            raise ValueError("Either item_ids or select_all=True must be provided")
+        if self.select_all and self.item_ids:
+            raise ValueError("Cannot use both item_ids and select_all")
+
+
+class BulkBatchResponse(BaseModel):
+    # Set when a select_all walk stopped at the per-request cap; the client
+    # repeats the request with after_id=next_cursor until has_more is false.
+    next_cursor: UUID | None = None
+    has_more: bool = False
+
+
+class BulkDeleteRequest(BulkSelectionRequest):
+    pass
+
+
+class BulkDeleteResponse(BulkBatchResponse):
+    deleted: int
+    failed: int
+    errors: list[str] = Field(default_factory=list)
+
+
+class BulkAnalyzeRequest(BulkSelectionRequest):
+    pass
+
+
+class BulkAnalyzeResponse(BulkBatchResponse):
+    queued: int
+    failed: int
+    skipped: int = 0
+    cooldown: int = 0
+    retry_after_seconds: int | None = None
+    errors: list[str] = Field(default_factory=list)
+
+
+class BulkCancelAnalysisRequest(BulkSelectionRequest):
+    pass
+
+
+class BulkCancelAnalysisResponse(BulkBatchResponse):
+    cancelled: int
+    skipped: int = 0
+    errors: list[str] = Field(default_factory=list)
+
+
+class BulkRotateRequest(BulkSelectionRequest):
+    direction: str = Field(
+        "cw",
+        pattern="^(cw|ccw)$",
+        description="Rotation direction applied to every selected item",
+    )
+
+
+class BulkRotateResponse(BulkBatchResponse):
+    queued: int
+    failed: int
+    skipped: int = 0
+    errors: list[str] = Field(default_factory=list)
+
+
+class BulkRemoveBackgroundRequest(BulkSelectionRequest):
+    bg_color: str = Field(
+        default="#FFFFFF",
+        pattern=r"^#[0-9A-Fa-f]{6}$",
+        description="Hex color for the replacement background",
+    )
+
+
+class BulkRemoveBackgroundResponse(BulkBatchResponse):
+    queued: int
+    failed: int
+    skipped: int = 0
+    already_done: int = 0
+    errors: list[str] = Field(default_factory=list)
+
+
+class ItemImageResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    item_id: UUID
+    image_path: str
+    thumbnail_path: str | None = None
+    medium_path: str | None = None
+    position: int
+    created_at: datetime
+
+    @computed_field
+    @property
+    def image_url(self) -> str:
+        return sign_image_url(self.image_path)
+
+    @computed_field
+    @property
+    def thumbnail_url(self) -> str | None:
+        return sign_optional(self.thumbnail_path)
+
+    @computed_field
+    @property
+    def medium_url(self) -> str | None:
+        return sign_optional(self.medium_path)
+
+
+class ReorderImagesRequest(BaseModel):
+    image_ids: list[UUID]
+
+
+class RemoveBackgroundRequest(BaseModel):
+    bg_color: str = Field(
+        default="#FFFFFF",
+        pattern=r"^#[0-9A-Fa-f]{6}$",
+        description="Hex color for the replacement background",
+    )
+
+
+class LogWashRequest(BaseModel):
+    washed_at: date | None = None  # If None, use user's timezone to determine today
+    method: str | None = Field(None, max_length=50)
+    notes: str | None = None
+
+
+class WashHistoryResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    item_id: UUID
+    washed_at: date
+    method: str | None = None
+    notes: str | None = None
+    created_at: datetime

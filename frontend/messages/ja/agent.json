@@ -1,0 +1,101 @@
+{
+  "title": "AI コーディネートアシスタント",
+  "description": "実際の衣服を検索するか、記録された色・種類・フォーマル度から日常、通勤、フォーマルコーデを最大3案表示します。",
+  "inputLabel": "着たい服や探したい衣類を入力してください",
+  "placeholder": "対応する中国語：帮我搭配一套日常穿搭 / 帮我搭配三套通勤穿搭，包含白色衬衫和蓝色牛仔裤 / 推荐正式穿搭",
+  "inputHelp": "生成中も編集できます。編集すると前のプレビューはキャンセルされます。",
+  "characterCount": "{count} / {max} 文字",
+  "generate": "プレビューを生成",
+  "generating": "生成中…",
+  "loading": "ワードローブを検索し、プレビューを準備しています…",
+  "results": "プレビュー結果",
+  "reply": "アシスタントの返答",
+  "outfit": "単品プレビュー {number}",
+  "imageUnavailable": "画像を表示できません",
+  "unnamedItem": "名前のない衣類",
+  "itemType": "種類：{type}",
+  "reasoning": "検索の説明",
+  "styleNotes": "プレビューの補足",
+  "previewOnly": "単品プレビューのみです。結果は完成したコーディネートではなく、コーディネートは保存されていません。",
+  "emptyState": "ワードローブに関する要望を入力してください。",
+  "status": {
+    "success": "プレビュー完了",
+    "needs_clarification": "追加情報が必要",
+    "no_items": "利用できる衣類なし",
+    "invalid_result": "無効な結果"
+  },
+  "guidance": {
+    "needs_clarification": "検索する衣類の種類など、アシスタントの質問に合わせて詳細を入力してください。",
+    "no_items": "利用可能な衣類が見つかりませんでした。該当する衣類とその状態を確認してください。",
+    "invalid_result": "プレビューを検証できませんでした。再生成してください。"
+  },
+  "errors": {
+    "blank": "要望を入力してください。",
+    "tooLong": "要望は 10,000 文字以内で入力してください。",
+    "auth": "再度ログインしてください。",
+    "invalidInput": "リクエストを受け付けられませんでした。入力を確認してください。",
+    "rateLimited": "リクエストが多すぎます。しばらくしてからお試しください。",
+    "failed": "プレビューの取得に失敗しました。再度お試しください。",
+    "invalidResponse": "予期しない形式の応答です。再度お試しください。"
+  },
+  "runtimeBadge": {
+    "unknown": "モデルモード未確認",
+    "configured": "ローカル Ollama 設定確認済み",
+    "unavailable": "ローカルモデル利用不可",
+    "remoteConfigured": "リモートモデルの接続先に到達可能",
+    "remoteUnavailable": "リモートモデルを利用できません"
+  },
+  "runtimeNotice": {
+    "unknown": "ワードローブ検索の閲覧専用プレビューです。モデルモードはバックエンドでまだ確認されていません。コーディネートは保存されません。",
+    "configured": "バックエンドがローカル Ollama qwen3:0.6b-cpu の設定を確認しました。この確認では推論しません。衣服検索と最大3案の日常・通勤コーデに対応し、組み合わせはバックエンドで検証します。保存はしません。対応する中国語の例をご利用ください。",
+    "unavailable": "ローカルモデルが利用できないか CPU 設定が未確認とバックエンドが報告しています。この状態確認ではモデルを実行しません。プレビューは閲覧専用です。",
+    "remoteConfigured": "リモートモデルの接続先に到達できます。この確認では推論を実行しておらず、GPU の使用も未検証です。プレビューは保存されません。",
+    "remoteUnavailable": "SSH トンネルの接続先またはリモートモデルを利用できません。手動で作成したトンネルとサービスを確認してください。ローカルモデルへ自動切り替えは行いません。"
+  },
+  "outfitReasoning": "組み合わせの理由",
+  "outfitPreviewOnly": "未保存の基本コーデです。場面への適合をご確認ください。天気や素材は推測しません。",
+  "scene": {
+    "daily": "日常コーデ",
+    "commute": "通勤コーデ",
+    "formal": "フォーマルコーデ"
+  },
+  "roles": {
+    "base_top": "トップス",
+    "bottom": "ボトムス",
+    "footwear": "靴（任意）",
+    "outer_layer": "アウター（任意）"
+  },
+  "previewSelector": "コーデを切り替え",
+  "allPreviews": "すべてのコーデ",
+  "selectPreview": "コーデ {number}",
+  "unsaved": "未保存のプレビュー",
+  "runtimeDetails": {
+    "label": "推論の実行状態",
+    "localCpu": "ローカル CPU（local_cpu）",
+    "remoteGpu": "リモート GPU モード（remote_gpu）",
+    "gpuUnverified": "GPU での実行は未検証です。GPU アクセラレーションの有効化を示すものではありません。",
+    "gpuReadinessOnly": "ここではサービスの準備状態のみを確認します。GPU 実行の証拠は各リクエストの結果に表示されます。"
+  },
+  "tunnelState": {
+    "connected": "SSH トンネルの接続先に到達可能",
+    "disconnected": "SSH トンネルが未接続、またはモデルサービスが利用不可",
+    "unknown": "SSH トンネルの接続状態は未確認"
+  },
+  "requestExecution": {
+    "label": "今回のリクエストの実行状況",
+    "request": "リクエスト {id}",
+    "gpuVerified": "今回のリクエストは許可されたリモート GPU での実行が検証されています。",
+    "gpuUnverified": "今回のリクエストには信頼できる GPU 実行の証拠がありません。",
+    "copyFallback": "一部の文章はバックエンドの安全な代替文です。",
+    "proofLabel": "GPU実行証拠",
+    "proofExpired": "証拠は期限切れ、または現在確認できません。以下は過去の測定値です。",
+    "proofRequest": "リクエストID",
+    "proofPid": "モデルプロセスPID",
+    "proofDevice": "GPU UUID",
+    "proofLayers": "読込済みレイヤー",
+    "proofMemory": "観測された最大プロセスGPUメモリ",
+    "proofMemoryValue": "{value, number} MiB",
+    "proofSamples": "サンプル数",
+    "sampleScope": "取得した時間範囲の測定値であり、リクエスト全体の最大値を保証しません。"
+  }
+}

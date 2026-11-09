@@ -1,0 +1,101 @@
+{
+  "title": "AI 코디 도우미",
+  "description": "실제 옷을 조회하거나 기록된 색상·유형·격식에 따라 일상·출근·격식 코디를 최대 3개 확인하세요.",
+  "inputLabel": "입고 싶은 옷이나 찾을 의류를 입력하세요",
+  "placeholder": "지원하는 중국어: 帮我搭配一套日常穿搭 / 帮我搭配三套通勤穿搭，包含白色衬衫和蓝色牛仔裤 / 推荐正式穿搭",
+  "inputHelp": "생성 중에도 수정할 수 있습니다. 수정하면 이전 미리보기가 취소됩니다.",
+  "characterCount": "{count} / {max}자",
+  "generate": "미리보기 생성",
+  "generating": "생성 중…",
+  "loading": "옷장을 검색하고 미리보기를 준비하고 있습니다…",
+  "results": "미리보기 결과",
+  "reply": "도우미 답변",
+  "outfit": "개별 의류 미리보기 {number}",
+  "imageUnavailable": "이미지를 표시할 수 없습니다",
+  "unnamedItem": "이름 없는 의류",
+  "itemType": "종류: {type}",
+  "reasoning": "검색 설명",
+  "styleNotes": "미리보기 참고 사항",
+  "previewOnly": "개별 의류 미리보기만 제공합니다. 결과는 완성된 코디가 아니며 코디가 저장되지 않았습니다.",
+  "emptyState": "옷장 관련 요청을 입력해 시작하세요.",
+  "status": {
+    "success": "미리보기 완료",
+    "needs_clarification": "추가 정보 필요",
+    "no_items": "사용 가능한 의류 없음",
+    "invalid_result": "유효하지 않은 결과"
+  },
+  "guidance": {
+    "needs_clarification": "찾을 의류 유형 등 도우미의 질문에 맞춰 자세한 내용을 입력하세요.",
+    "no_items": "사용 가능한 의류를 찾지 못했습니다. 해당 의류와 상태를 확인하세요.",
+    "invalid_result": "미리보기를 검증하지 못했습니다. 다시 생성하세요."
+  },
+  "errors": {
+    "blank": "요청을 입력하세요.",
+    "tooLong": "요청은 10,000자 이내로 입력하세요.",
+    "auth": "다시 로그인한 후 이용하세요.",
+    "invalidInput": "요청이 거부되었습니다. 입력을 확인하고 다시 시도하세요.",
+    "rateLimited": "요청이 너무 많습니다. 잠시 후 다시 시도하세요.",
+    "failed": "미리보기 요청에 실패했습니다. 다시 시도하세요.",
+    "invalidResponse": "예상하지 못한 형식의 응답입니다. 다시 시도하세요."
+  },
+  "runtimeBadge": {
+    "unknown": "모델 모드 미확인",
+    "configured": "로컬 Ollama 설정 확인됨",
+    "unavailable": "로컬 모델 사용 불가",
+    "remoteConfigured": "원격 모델 엔드포인트 연결 가능",
+    "remoteUnavailable": "원격 모델 사용 불가"
+  },
+  "runtimeNotice": {
+    "unknown": "읽기 전용 옷장 검색 미리보기입니다. 백엔드에서 모델 모드를 아직 확인하지 않았습니다. 코디는 저장되지 않습니다.",
+    "configured": "백엔드가 로컬 Ollama qwen3:0.6b-cpu 설정을 확인했습니다. 이 확인은 추론을 실행하지 않습니다. 옷 조회와 최대 3개의 기본 일상·출근 코디를 지원하며 조합은 백엔드가 검증합니다. 미리보기는 저장되지 않습니다. 지원하는 중국어 예시를 사용하세요.",
+    "unavailable": "백엔드에서 로컬 모델을 사용할 수 없거나 CPU 설정이 확인되지 않았다고 보고했습니다. 이 상태 확인은 모델을 실행하지 않습니다. 미리보기는 읽기 전용입니다.",
+    "remoteConfigured": "원격 모델 엔드포인트에 연결할 수 있습니다. 이 확인은 추론을 실행하지 않으며 GPU 사용을 검증하지 않습니다. 미리보기는 저장되지 않습니다.",
+    "remoteUnavailable": "SSH 터널 엔드포인트 또는 원격 모델 서비스를 사용할 수 없습니다. 수동으로 연결한 터널과 서비스를 확인하세요. 로컬 모델로 자동 전환하지 않습니다."
+  },
+  "outfitReasoning": "코디 이유",
+  "outfitPreviewOnly": "저장하지 않은 기본 코디입니다. 상황에 맞는지 확인하세요. 날씨와 소재는 추측하지 않습니다.",
+  "scene": {
+    "daily": "일상 코디",
+    "commute": "출근 코디",
+    "formal": "격식 있는 코디"
+  },
+  "roles": {
+    "base_top": "상의",
+    "bottom": "하의",
+    "footwear": "신발 (선택)",
+    "outer_layer": "겉옷 (선택)"
+  },
+  "previewSelector": "코디 미리보기 전환",
+  "allPreviews": "모든 코디",
+  "selectPreview": "코디 {number}",
+  "unsaved": "저장하지 않은 미리보기",
+  "runtimeDetails": {
+    "label": "추론 실행 상태",
+    "localCpu": "로컬 CPU (local_cpu)",
+    "remoteGpu": "원격 GPU 모드 (remote_gpu)",
+    "gpuUnverified": "GPU 실행은 아직 검증되지 않았으며 GPU 가속도 확인되지 않았습니다.",
+    "gpuReadinessOnly": "여기서는 서비스 준비 상태만 확인합니다. GPU 실행 증거는 각 요청 결과에 표시됩니다."
+  },
+  "tunnelState": {
+    "connected": "SSH 터널 엔드포인트 연결 가능",
+    "disconnected": "SSH 터널 연결 끊김 또는 모델 서비스 사용 불가",
+    "unknown": "SSH 터널 엔드포인트 상태 미확인"
+  },
+  "requestExecution": {
+    "label": "이번 요청 실행 정보",
+    "request": "요청 {id}",
+    "gpuVerified": "이번 요청이 승인된 원격 GPU에서 실행된 것으로 검증되었습니다.",
+    "gpuUnverified": "이번 요청에 대한 신뢰할 수 있는 GPU 실행 증거가 없습니다.",
+    "copyFallback": "일부 문구는 백엔드의 안전한 대체 문구입니다.",
+    "proofLabel": "GPU 실행 증거",
+    "proofExpired": "증거가 만료되었거나 현재 확인할 수 없습니다. 아래는 이전 측정값입니다.",
+    "proofRequest": "요청 ID",
+    "proofPid": "모델 프로세스 PID",
+    "proofDevice": "GPU UUID",
+    "proofLayers": "로드된 레이어",
+    "proofMemory": "관측된 최대 프로세스 GPU 메모리",
+    "proofMemoryValue": "{value, number} MiB",
+    "proofSamples": "샘플 수",
+    "sampleScope": "캡처된 구간의 측정값이며 전체 요청의 최고치를 보장하지 않습니다."
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "title": "AI 穿搭助手",
+  "description": "查询真实衣物，或按记录的颜色、类型和正式程度生成最多 3 套日常、通勤、正式穿搭。",
+  "inputLabel": "你想穿什么，或查询哪些衣物？",
+  "placeholder": "例如：帮我搭配一套日常穿搭 / 帮我搭配三套通勤穿搭，包含白色衬衫和蓝色牛仔裤 / 推荐正式穿搭",
+  "inputHelp": "生成期间也可修改需求；修改后会取消上一次预览。",
+  "characterCount": "{count} / {max} 字",
+  "generate": "生成预览",
+  "generating": "正在生成…",
+  "loading": "正在查询衣橱并整理预览…",
+  "results": "预览结果",
+  "reply": "助手回复",
+  "outfit": "单品预览 {number}",
+  "imageUnavailable": "图片暂不可用",
+  "unnamedItem": "未命名衣物",
+  "itemType": "类型：{type}",
+  "reasoning": "查询说明",
+  "styleNotes": "预览提示",
+  "previewOnly": "仅供单品预览，结果不代表整套搭配，尚未保存任何穿搭。",
+  "emptyState": "写下衣橱相关需求，开始生成预览。",
+  "status": {
+    "success": "预览已生成",
+    "needs_clarification": "需要补充信息",
+    "no_items": "没有可用衣物",
+    "invalid_result": "结果无效"
+  },
+  "guidance": {
+    "needs_clarification": "请根据助手的问题补充需求，例如明确要查询的衣物类型。",
+    "no_items": "本次查询没有找到可用衣物，请检查对应衣物及其状态。",
+    "invalid_result": "本次预览未通过校验，请重新生成。"
+  },
+  "errors": {
+    "blank": "请先输入需求。",
+    "tooLong": "需求不能超过 10,000 字。",
+    "auth": "请重新登录后使用助手。",
+    "invalidInput": "请求未通过校验，请检查输入后重试。",
+    "rateLimited": "请求过于频繁，请稍后重试。",
+    "failed": "预览请求失败，请重试。",
+    "invalidResponse": "服务返回的数据格式不正确，请重试。"
+  },
+  "runtimeBadge": {
+    "unknown": "模型模式待确认",
+    "configured": "本机 Ollama 配置已确认",
+    "unavailable": "本机模型暂不可用",
+    "remoteConfigured": "远程模型入口可用",
+    "remoteUnavailable": "远程模型暂不可用"
+  },
+  "runtimeNotice": {
+    "unknown": "只读衣橱查询预览，模型模式尚未由后端确认。生成预览不会保存穿搭。",
+    "configured": "后端已确认本机 Ollama qwen3:0.6b-cpu 配置，此状态检查不会运行推理。支持衣物查询和最多 3 套基础日常、通勤穿搭；组合由后端核验，生成预览不会保存穿搭。",
+    "unavailable": "后端报告本机模型暂不可用，或 CPU 配置尚未确认。此状态检查不会运行模型；预览仍为只读。",
+    "remoteConfigured": "远程模型服务入口可达；此检查未执行推理，尚未验证实际使用 GPU。预览不会保存穿搭。",
+    "remoteUnavailable": "SSH 隧道入口或远程模型服务不可用。请检查手动建立的隧道及服务；不会自动回退本机模型。"
+  },
+  "outfitReasoning": "搭配理由",
+  "outfitPreviewOnly": "这是未保存的基础穿搭预览；请结合实际场景确认，未推断天气或材质。",
+  "scene": {
+    "daily": "日常穿搭",
+    "commute": "通勤穿搭",
+    "formal": "正式穿搭"
+  },
+  "roles": {
+    "base_top": "上衣",
+    "bottom": "下装",
+    "footwear": "鞋子（可选）",
+    "outer_layer": "外套（可选）"
+  },
+  "previewSelector": "切换穿搭方案",
+  "allPreviews": "全部方案",
+  "selectPreview": "方案 {number}",
+  "unsaved": "预览未保存",
+  "runtimeDetails": {
+    "label": "推理运行状态",
+    "localCpu": "本地 CPU（local_cpu）",
+    "remoteGpu": "远程 GPU 模式（remote_gpu）",
+    "gpuUnverified": "GPU 执行尚未验证，不能据此认定已启用 GPU 加速。",
+    "gpuReadinessOnly": "这里只检查服务就绪状态；GPU 执行证明见本次请求结果。"
+  },
+  "tunnelState": {
+    "connected": "SSH 隧道入口可达",
+    "disconnected": "SSH 隧道入口无法连接或模型服务不可用",
+    "unknown": "SSH 隧道入口状态未确认"
+  },
+  "requestExecution": {
+    "label": "本次请求执行情况",
+    "request": "请求 {id}",
+    "gpuVerified": "本次请求已核验在获准的远程 GPU 上执行。",
+    "gpuUnverified": "本次请求尚无可信的 GPU 执行证明。",
+    "copyFallback": "部分文案使用后端安全兜底。",
+    "proofLabel": "GPU执行证据",
+    "proofExpired": "证据已过期或当前无法确认；以下仅为历史采样。",
+    "proofRequest": "请求ID",
+    "proofPid": "模型进程PID",
+    "proofDevice": "GPU UUID",
+    "proofLayers": "加载层数",
+    "proofMemory": "采样最高进程显存",
+    "proofMemoryValue": "{value, number} MiB",
+    "proofSamples": "采样数",
+    "sampleScope": "仅覆盖已采集窗口，不代表整个请求的绝对峰值。"
+  }
+}

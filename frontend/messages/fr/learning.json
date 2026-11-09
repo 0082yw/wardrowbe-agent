@@ -1,0 +1,94 @@
+{
+  "bestCombinations": {
+    "description": "Paires d'articles que vous aimez régulièrement ensemble",
+    "title": "Vos meilleures combinaisons"
+  },
+  "colorPreferences": {
+    "description": "Couleurs que vous avez tendance à accepter ou rejeter",
+    "noData": "Pas assez de retours pour déterminer vos préférences de couleurs pour le moment.",
+    "title": "Préférences de couleurs apprises"
+  },
+  "confidence": "{percent} % de confiance",
+  "dismiss": "Fermer",
+  "insightCategoryColor": "Couleur",
+  "insightCategoryOccasion": "Occasion",
+  "insightCategoryOverall": "Global",
+  "insightCategoryStyle": "Style",
+  "insightCategoryWeather": "Météo",
+  "insightColorAvoidedDescription": "Vous avez tendance à rejeter les tenues de couleur {color}. Nous vous proposerons des alternatives.",
+  "insightColorAvoidedTitle": "Pas fan de la couleur {color}",
+  "insightColorLovedDescription": "Vos retours montrent une forte préférence pour les articles de couleur {color}. Nous les privilégierons dans vos recommandations.",
+  "insightColorLovedTitle": "Vous adorez la couleur {color} !",
+  "insightGreatMatchDescription": "Vous acceptez {percent} de nos suggestions. Nous cernons bien votre style !",
+  "insightGreatMatchTitle": "Belle harmonie !",
+  "insightHelpUsLearnDescription": "Vous avez rejeté beaucoup de suggestions. Pensez à mettre à jour vos préférences pour nous aider à nous améliorer.",
+  "insightHelpUsLearnTitle": "Aidez-nous à cerner votre style",
+  "insightStyleLeaningDescription": "D'après vos retours, vous vous orientez vers les styles {styles}.",
+  "insightStyleLeaningTitle": "Votre style : {style}",
+  "interpretationDisliked": "pas aimé",
+  "interpretationLiked": "aimé",
+  "interpretationNeutral": "neutre",
+  "interpretationStronglyDisliked": "pas du tout aimé",
+  "interpretationStronglyLiked": "beaucoup aimé",
+  "lastUpdated": "Profil d'apprentissage mis à jour le : {date}",
+  "loadError": "Échec du chargement des données d'apprentissage. Veuillez réessayer.",
+  "noData": {
+    "alreadyGaveFeedback": "Vous avez déjà donné des retours ? Cliquez sur « Calculer maintenant » pour les traiter.",
+    "computeNow": "Calculer maintenant",
+    "computing": "Calcul en cours...",
+    "description": "Commencez par accepter ou rejeter des suggestions de tenues et en les notant.",
+    "getOutfitSuggestions": "Obtenir des suggestions de tenues",
+    "title": "Pas encore de données d'apprentissage"
+  },
+  "occasionPatterns": {
+    "description": "Ce qui fonctionne pour différentes occasions",
+    "title": "Tendances par occasion"
+  },
+  "percent": "{value} %",
+  "preferredColors": "Couleurs préférées :",
+  "recompute": "Recalculer",
+  "stats": {
+    "acceptanceRate": "Taux d'acceptation",
+    "averageRating": "Note moyenne",
+    "feedbackGiven": "Retours donnés",
+    "notEnoughData": "Pas assez de données",
+    "outOfStars": "sur {max, plural, one {# étoile} other {# étoiles}}",
+    "outfitsRated": "{count, plural, one {{count} tenue notée} other {{count} tenues notées}}",
+    "rateMoreOutfits": "Évaluez plus de tenues",
+    "rateOutfitStyles": "Évaluez les styles de tenues",
+    "styleRating": "Note de style",
+    "styleSatisfaction": "satisfaction de style",
+    "suggestionsAccepted": "de suggestions acceptées"
+  },
+  "styleInsights": {
+    "description": "Ce que nous avons appris sur vos préférences",
+    "generate": "Nouveaux aperçus",
+    "title": "Aperçus de style"
+  },
+  "stylePreferences": {
+    "description": "Styles qui correspondent à vos goûts",
+    "noData": "Pas assez de retours pour déterminer vos préférences de style pour le moment.",
+    "title": "Préférences de style apprises"
+  },
+  "subtitle": "Comment l'IA apprend de vos retours",
+  "subtitleEmpty": "Commencez à évaluer les tenues pour aider l'IA à apprendre vos préférences",
+  "successRate": "{percent} % de succès",
+  "suggestedUpdates": {
+    "addToAvoid": "Ajouter aux couleurs à éviter :",
+    "addToFavorites": "Ajouter aux couleurs favorites :",
+    "description": "D'après vos retours, nous vous suggérons de mettre à jour vos préférences",
+    "title": "Mises à jour de préférences suggérées",
+    "updatePreferences": "Mettre à jour les préférences"
+  },
+  "timesPaired": "{count}x combinés",
+  "title": "Apprentissage IA",
+  "weatherPreferences": {
+    "description": "Comment vous vous habillez selon les conditions",
+    "layers": "~{count} couches",
+    "title": "Préférences météo"
+  },
+  "weatherTypeCold": "Froid",
+  "weatherTypeCool": "Frais",
+  "weatherTypeHot": "Chaud",
+  "weatherTypeMild": "Doux"
+}

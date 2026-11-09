@@ -1,0 +1,259 @@
+'use client';
+
+import { useState, useMemo } from 'react';
+import { Calendar } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  useCalendarOutfits,
+  type Outfit,
+  type OutfitFilters,
+  type OutfitStatus,
+} from '@/lib/hooks/use-outfits';
+import { useOccasions } from '@/lib/hooks/use-translated-constants';
+import { OutfitCalendar } from '@/components/outfit-calendar';
+import { OutfitHistoryCard } from '@/components/outfit-history-card';
+import { OutfitStatusFilter } from '@/components/outfit-status';
+import { FeedbackDialog } from '@/components/feedback-dialog';
+import { OutfitPreviewDialog } from '@/components/outfit-preview-dialog';
+import { isSameDay, parseISO } from 'date-fns';
+import { formatDate, parseDateString } from '@/lib/utils';
+import { useUserToday } from '@/lib/hooks/use-user';
+
+function EmptyHistory({ t }: { t: (key: string) => string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+      <div className="rounded-full bg-muted p-6 mb-4">
+        <Calendar className="h-12 w-12 text-muted-foreground" />
+      </div>
+      <h3 className="text-lg font-semibold mb-2">{t('empty.title')}</h3>
+      <p className="text-muted-foreground mb-6 max-w-sm">
+        {t('empty.description')}
+      </p>
+      <Button variant="outline" asChild>
+        <a href="/dashboard/suggest">{t('empty.getFirstSuggestion')}</a>
+      </Button>
+    </div>
+  );
+}
+
+function EmptyDate({ date, t }: { date: Date; t: (key: string, params?: Record<string, string | number>) => string }) {
+  const locale = useLocale();
+  return (
+    <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+      <Calendar className="h-8 w-8 text-muted-foreground mb-2" />
+      <p className="text-sm text-muted-foreground">
+        {t('noOutfitsForDate', {
+          date: formatDate(date, locale, { month: 'long', day: 'numeric', year: 'numeric' }),
+        })}
+      </p>
+    </div>
+  );
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="space-y-4">
+      {[1, 2, 3].map((i) => (
+        <Card key={i}>
+          <CardContent className="p-4">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <Skeleton className="h-5 w-24 mb-2" />
+                <Skeleton className="h-5 w-16" />
+              </div>
+              <Skeleton className="h-5 w-5" />
+            </div>
+            <div className="flex gap-2">
+              {[1, 2, 3].map((j) => (
+                <Skeleton key={j} className="w-16 h-16 rounded" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function CalendarSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between mb-4">
+        <Skeleton className="h-8 w-8" />
+        <Skeleton className="h-6 w-32" />
+        <Skeleton className="h-8 w-8" />
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {[...Array(35)].map((_, i) => (
+          <Skeleton key={i} className="h-10 w-full rounded-md" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function HistoryPage() {
+  const t = useTranslations('history');
+  const occasions = useOccasions();
+  const locale = useLocale();
+  const todayKey = useUserToday()();
+  const today = useMemo(() => parseDateString(todayKey), [todayKey]);
+  // Null until the user navigates, so that the view follows the profile timezone once it loads
+  // instead of freezing on the browser's day from the first render.
+  const [viewedMonth, setViewedMonth] = useState<{ year: number; month: number } | null>(null);
+  const [pickedDate, setPickedDate] = useState<Date | null>(null);
+  const year = viewedMonth?.year ?? today.getFullYear();
+  const month = viewedMonth?.month ?? today.getMonth() + 1;
+  const selectedDate = pickedDate ?? today;
+  const [filters, setFilters] = useState<OutfitFilters>({});
+  const [feedbackOutfit, setFeedbackOutfit] = useState<Outfit | null>(null);
+  const [previewOutfit, setPreviewOutfit] = useState<Outfit | null>(null);
+
+  const { data, isLoading, isError } = useCalendarOutfits(year, month, filters);
+
+  // Filter outfits for the selected date
+  const selectedDateOutfits = useMemo(() => {
+    if (!data?.outfits || !selectedDate) return [];
+    return data.outfits.filter((outfit) =>
+      outfit.scheduled_for && isSameDay(parseISO(outfit.scheduled_for), selectedDate)
+    );
+  }, [data?.outfits, selectedDate]);
+
+  const handleMonthChange = (newYear: number, newMonth: number) => {
+    setViewedMonth({ year: newYear, month: newMonth });
+  };
+
+  const handleOccasionChange = (value: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      occasion: value === 'all' ? undefined : value,
+    }));
+  };
+
+  const handleStatusChange = (status: OutfitStatus | undefined) => {
+    setFilters((prev) => ({ ...prev, status }));
+  };
+
+  if (isError) {
+    return (
+      <div className="text-center py-8 text-red-500">
+        {t('loadError')}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">{t('title')}</h1>
+          <p className="text-muted-foreground">
+            {t('subtitle')}
+          </p>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-3 flex-wrap">
+        <Select value={filters.occasion || 'all'} onValueChange={handleOccasionChange}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder={t('filters.allOccasions')} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t('filters.allOccasions')}</SelectItem>
+            {occasions.map((o) => (
+              <SelectItem key={o.value} value={o.value}>
+                {o.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <OutfitStatusFilter value={filters.status} onChange={handleStatusChange} />
+      </div>
+
+      {/* Main content - two column layout */}
+      <div className="grid lg:grid-cols-[350px_1fr] gap-6">
+        {/* Calendar column */}
+        <Card className="h-fit order-2 lg:order-1">
+          <CardContent className="p-4">
+            {isLoading ? (
+              <CalendarSkeleton />
+            ) : (
+              <OutfitCalendar
+                year={year}
+                month={month}
+                outfits={data?.outfits || []}
+                selectedDate={selectedDate}
+                onSelectDate={setPickedDate}
+                onMonthChange={handleMonthChange}
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Outfits column */}
+        <div className="order-1 lg:order-2 space-y-4">
+          {/* Selected date header */}
+          {selectedDate && (
+            <div className="border-b pb-3">
+              <h2 className="text-lg font-semibold">
+                {formatDate(selectedDate, locale, { weekday: 'long', month: 'long', day: 'numeric' })}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {t('outfitCount', { count: selectedDateOutfits.length })}
+              </p>
+            </div>
+          )}
+
+          {isLoading ? (
+            <LoadingSkeleton />
+          ) : !data || data.outfits.length === 0 ? (
+            <EmptyHistory t={t} />
+          ) : selectedDate && selectedDateOutfits.length === 0 ? (
+            <EmptyDate date={selectedDate} t={t} />
+          ) : (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+              {selectedDateOutfits.map((outfit) => (
+                <OutfitHistoryCard
+                  key={outfit.id}
+                  outfit={outfit}
+                  onFeedback={() => setFeedbackOutfit(outfit)}
+                  onPreview={() => setPreviewOutfit(outfit)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Feedback dialog */}
+      {feedbackOutfit && (
+        <FeedbackDialog
+          outfit={feedbackOutfit}
+          open={!!feedbackOutfit}
+          onClose={() => setFeedbackOutfit(null)}
+        />
+      )}
+
+      {/* Preview dialog */}
+      {previewOutfit && (
+        <OutfitPreviewDialog
+          outfit={previewOutfit}
+          open={!!previewOutfit}
+          onClose={() => setPreviewOutfit(null)}
+        />
+      )}
+    </div>
+  );
+}

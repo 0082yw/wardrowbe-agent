@@ -1,0 +1,97 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Build outputs
+.next/
+dist/
+build/
+*.egg-info/
+*.tsbuildinfo
+
+# Environment and secrets
+.env
+.env.local
+.env.production
+.env.*.local
+.env.*
+!.env.example
+!.env.*.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Cache
+.cache/
+.pytest_cache/
+.mypy_cache/
+.fastembed_cache/
+
+# Test coverage
+coverage/
+htmlcov/
+.coverage
+
+# Docker volumes (if any local paths are used)
+postgres_data/
+redis_data/
+uploads/
+
+# Kubernetes secrets (NEVER commit actual secrets)
+k8s/secrets.yaml.local
+k8s/*.secret.yaml
+
+# Local development
+*.local
+.claude/
+.serena/
+CLAUDE.md
+deploy.sh
+screenshots/
+.scope.md
+.mcp.json
+testing/
+.playwright-mcp
+*.review.yml
+*-test.yml
+
+# Sanitized GitHub publication copies are separate from this live workspace.
+/github-release/
+
+# Private runtime and local data
+k8s/secrets.yaml
+*.pem
+*.key
+*.sqlite
+*.sqlite3
+*.dump
+*.sql
+local-runtime/
+/models/
+
+# Public project screenshots can use this dedicated directory.
+!docs/images/
+
+# Local instructions, personal documents, and private notes
+/AGENTS.md
+/GITHUB_SUBMISSION.md
+/docs/GITHUB_SUBMISSION.md
+/docs/INTERVIEW_PREPARATION.md
+/resume/
+/resumes/
+/private-notes/
+/chat-history/

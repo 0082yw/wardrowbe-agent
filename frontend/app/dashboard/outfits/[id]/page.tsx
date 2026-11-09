@@ -1,0 +1,289 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { useParams, useRouter } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
+import {
+  BookmarkPlus,
+  CalendarPlus,
+  ChevronLeft,
+  Loader2,
+  Pencil,
+  Star,
+  Trash2,
+} from 'lucide-react';
+import { toast } from 'sonner';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { SourceBadge } from '@/components/shared/source-badge';
+import { LineageCard } from '@/components/shared/lineage-card';
+import { CloneToLookbookDialog } from '@/components/shared/clone-to-lookbook-dialog';
+import { useDeleteOutfit, useOutfit, useOutfits } from '@/lib/hooks/use-outfits';
+import { useWearToday } from '@/lib/hooks/use-studio';
+import { useUserToday } from '@/lib/hooks/use-user';
+import { useOutfitTitle } from '@/lib/hooks/use-outfit-title';
+import { useOccasionLabel, useTypeLabel } from '@/lib/hooks/use-translated-constants';
+import { getErrorMessage } from '@/lib/api';
+import { formatDate, formatRelativeDate } from '@/lib/utils';
+
+export default function OutfitDetailPage() {
+  const typeLabel = useTypeLabel();
+  const t = useTranslations('outfits');
+  const tc = useTranslations('common');
+  const occasionLabel = useOccasionLabel();
+  const getTitle = useOutfitTitle();
+  const locale = useLocale();
+  const router = useRouter();
+  const params = useParams<{ id: string }>();
+  const outfitId = params?.id;
+
+  const { data: outfit, isLoading } = useOutfit(outfitId);
+  const deleteMutation = useDeleteOutfit();
+  const wearTodayMutation = useWearToday(outfitId ?? '');
+  const getUserToday = useUserToday();
+
+  const [cloneDialogOpen, setCloneDialogOpen] = useState(false);
+
+  const isTemplate =
+    outfit !== undefined && outfit !== null && outfit.scheduled_for === null;
+  const isWorn = !!outfit?.feedback?.worn_at;
+
+  const { data: wearInstancesData } = useOutfits(
+    isTemplate && outfitId ? { cloned_from_outfit_id: outfitId } : {},
+    1,
+    10
+  );
+
+  if (isLoading || !outfit) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-64" />
+      </div>
+    );
+  }
+
+  const handleWearToday = async () => {
+    try {
+      const result = await wearTodayMutation.mutateAsync({ scheduled_for: getUserToday() });
+      toast.success(t('detail.addedToToday'));
+      router.push(`/dashboard/outfits/${result.id}`);
+    } catch (error) {
+      toast.error(getErrorMessage(error, t('detail.wearTodayError')));
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm(t('detail.deleteConfirm'))) return;
+    try {
+      await deleteMutation.mutateAsync(outfit.id);
+      toast.success(t('detail.deleted'));
+      router.push('/dashboard/outfits');
+    } catch (error) {
+      toast.error(getErrorMessage(error, t('detail.deleteError')));
+    }
+  };
+
+  const title = getTitle(outfit);
+
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto">
+      <div className="flex items-center justify-between gap-4">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/dashboard/outfits">
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            {t('detail.backToOutfits')}
+          </Link>
+        </Button>
+      </div>
+
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight capitalize">{title}</h1>
+        <div className="flex items-center gap-2 mt-2">
+          <Badge variant="outline" className="capitalize">
+            {occasionLabel(outfit.occasion)}
+          </Badge>
+          <SourceBadge source={outfit.source} />
+          <span className="text-sm text-muted-foreground">
+            {outfit.scheduled_for
+              ? formatRelativeDate(outfit.scheduled_for, locale, getUserToday())
+              : t('detail.lookbookTemplate')}
+          </span>
+        </div>
+
+        {/* AI reasoning */}
+        {((outfit.name && outfit.reasoning) ||
+          (outfit.highlights && outfit.highlights.length > 0)) && (
+          <div className="mt-2 space-y-1.5 text-xs flex-1">
+            {outfit.name && outfit.reasoning && (
+              <p className="font-medium text-foreground break-words">{outfit.reasoning}</p>
+            )}
+            {outfit.highlights && outfit.highlights.length > 0 && (
+              <ul className="space-y-0.5">
+                {outfit.highlights.slice(0, 3).map((highlight, index) => (
+                  <li key={index} className="flex items-start gap-1.5 text-muted-foreground">
+                    <span className="text-primary">•</span>
+                    <span>{highlight}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        {/* Styling tip */}
+        {outfit.style_notes && (
+          <div className="mt-2 p-2 bg-muted rounded border text-xs">
+            <p className="text-muted-foreground">
+              <span className="font-medium text-foreground">{t('detail.stylingTip')}</span>{' '}
+              {outfit.style_notes}
+            </p>
+          </div>
+        )}
+
+      </div>
+
+      <LineageCard outfit={outfit} />
+
+      <Card>
+        <CardContent className="p-4">
+          <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+            {t('detail.items', { count: outfit.items.length })}
+          </h2>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+            {outfit.items.map((item) => (
+              <Link
+                key={item.id}
+                href={`/dashboard/wardrobe?itemId=${item.id}`}
+                className="group"
+              >
+                <div className="relative aspect-square rounded-lg overflow-hidden border bg-muted">
+                  {item.thumbnail_url || item.image_url ? (
+                    <Image
+                      src={(item.thumbnail_url || item.image_url)!}
+                      alt={item.name || typeLabel(item.type)}
+                      fill
+                      className="object-cover transition-transform group-hover:scale-105"
+                      sizes="(max-width: 640px) 33vw, 20vw"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <span className="text-xs text-muted-foreground">
+                        {typeLabel(item.type)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 truncate">
+                  {item.name || typeLabel(item.type)}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex flex-wrap gap-2">
+        {isTemplate && (
+          <Button requiresWrite onClick={handleWearToday} disabled={wearTodayMutation.isPending}>
+            {wearTodayMutation.isPending ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <CalendarPlus className="h-4 w-4 mr-2" />
+            )}
+            {t('detail.wearToday')}
+          </Button>
+        )}
+        {!isTemplate && (
+          <Button variant="outline" requiresWrite onClick={() => setCloneDialogOpen(true)}>
+            <BookmarkPlus className="h-4 w-4 mr-2" />
+            {t('detail.saveToLookbook')}
+          </Button>
+        )}
+        {!isWorn && (
+          <Button requiresWrite variant="outline" asChild>
+            <Link href={`/dashboard/outfits/new?edit=${outfit.id}`}>
+              <Pencil className="h-4 w-4 mr-2" />
+              {tc('edit')}
+            </Link>
+          </Button>
+        )}
+        <Button requiresWrite
+          variant="outline"
+          className="text-destructive hover:text-destructive"
+          onClick={handleDelete}
+          disabled={deleteMutation.isPending}
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          {tc('delete')}
+        </Button>
+      </div>
+
+      {isTemplate && wearInstancesData && wearInstancesData.total > 0 && (
+        <Card>
+          <CardContent className="p-4">
+            <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+              {t('detail.wornCount', { count: wearInstancesData.total })}
+            </h2>
+            <div className="space-y-2">
+              {wearInstancesData.outfits.map((wear) => (
+                <Link
+                  key={wear.id}
+                  href={`/dashboard/outfits/${wear.id}`}
+                  className="flex items-center justify-between rounded-lg border px-3 py-2 hover:bg-muted/50"
+                >
+                  <span className="text-sm">
+                    {wear.scheduled_for
+                      ? formatDate(wear.scheduled_for, locale, {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })
+                      : t('detail.undated')}
+                  </span>
+                  {wear.feedback?.rating && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                      {wear.feedback.rating}
+                    </div>
+                  )}
+                </Link>
+              ))}
+            </div>
+            {wearInstancesData.has_more && (
+              <Button variant="link" size="sm" asChild className="mt-2 px-0">
+                <Link href={`/dashboard/outfits?filter=worn&cloned_from=${outfit.id}`}>
+                  {t('detail.seeAll')}
+                </Link>
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {isTemplate && wearInstancesData && wearInstancesData.total === 0 && (
+        <Alert className="border-muted">
+          <AlertDescription className="text-sm text-muted-foreground">
+            {t('detail.notWornYet')}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {!isTemplate && (
+        <CloneToLookbookDialog
+          open={cloneDialogOpen}
+          sourceOutfitId={outfit.id}
+          sourceOccasion={outfit.occasion}
+          onClose={() => setCloneDialogOpen(false)}
+          onSuccess={(newId) => router.push(`/dashboard/outfits/${newId}`)}
+        />
+      )}
+    </div>
+  );
+}

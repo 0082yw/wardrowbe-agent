@@ -1,0 +1,69 @@
+{
+  "insightColorHeavy": "옷장에 {color} 계열이 많아요({percent}). 다양한 색을 더해 보세요!",
+  "insightGreatTaste": "안목이 훌륭해요! 추천의 {percent}를 수락하셨어요.",
+  "insightLimitedColors": "옷장의 색상이 다양하지 않아요. 새로운 색에 도전해 보세요!",
+  "insightManyRejections": "거절한 추천이 많아요. 스타일 취향을 업데이트해 보세요.",
+  "insightMoreBottomsThanTops": "상의보다 하의가 더 많아요. 셔츠를 몇 벌 추가해 보세요!",
+  "insightMoreTopsThanBottoms": "하의보다 상의가 훨씬 많아요. 바지나 스커트를 추가해 보세요!",
+  "insightMostlyLayers": "상의 대부분이 카디건, 조끼 같은 겹쳐 입는 옷이에요. 안에 입을 기본 아이템을 몇 벌 추가해 보세요!",
+  "insightNeverWorn": "{count, plural, one {한 번도 입지 않은 아이템이 #개 있어요. 코디에 활용해 보세요!} other {한 번도 입지 않은 아이템이 #개 있어요. 코디에 활용해 보세요!}}",
+  "insightNoOutfitsThisWeek": "이번 주에는 코디를 만들지 않았어요. 추천을 받아 보세요!",
+  "insightStartAdding": "옷장에 아이템을 추가하며 시작해 보세요!",
+  "insights": {
+    "acceptanceTrend": {
+      "description": "시간에 따른 추천 반응 변화",
+      "title": "수락률 추이"
+    },
+    "colorDistribution": {
+      "description": "옷장에서 가장 많은 색상",
+      "noData": "아직 색상 데이터가 없어요",
+      "title": "색상 분포"
+    },
+    "itemTypes": {
+      "description": "의류 유형별 분류",
+      "noData": "아직 아이템이 없어요",
+      "title": "아이템 유형"
+    },
+    "leastWorn": {
+      "description": "이 아이템들을 입어보는 건 어때요",
+      "noData": "계속 기록해 보세요!",
+      "title": "가장 적게 입은"
+    },
+    "mostWorn": {
+      "description": "자주 입는 아이템",
+      "noData": "코디 기록을 시작해 보세요!",
+      "title": "가장 많이 입은"
+    },
+    "neverWorn": {
+      "description": "이 아이템들을 입어볼 때가 됐나요?",
+      "noData": "모든 아이템을 입어봤어요!",
+      "title": "한 번도 안 입은"
+    },
+    "title": "인사이트"
+  },
+  "loadError": "분석 데이터를 불러오지 못했어요. 다시 시도해 주세요.",
+  "percent": "{value}%",
+  "stats": {
+    "acceptanceRate": {
+      "description": "추천 수락 비율",
+      "title": "수락률"
+    },
+    "avgRating": "평균 평점: {rating}/5",
+    "outfitsGenerated": {
+      "description": "이번 주 {count}개",
+      "title": "생성된 코디"
+    },
+    "totalItems": {
+      "description": "바로 입을 수 있는 {count}개",
+      "title": "전체 아이템"
+    },
+    "totalWears": {
+      "description": "코디를 기록하세요",
+      "noData": "아직 데이터가 없어요",
+      "title": "총 착용 횟수"
+    }
+  },
+  "subtitle": "옷장 인사이트와 통계",
+  "title": "분석",
+  "wearCount": "{count}회"
+}

@@ -1,0 +1,69 @@
+{
+  "insightColorHeavy": "Dein Kleiderschrank enthält viel {color} ({percent}). Wie wäre es mit mehr Abwechslung?",
+  "insightGreatTaste": "Guter Geschmack! Du nimmst {percent} der Vorschläge an.",
+  "insightLimitedColors": "Dein Kleiderschrank hat wenig Farbvielfalt. Probier neue Farben aus!",
+  "insightManyRejections": "Du lehnst viele Vorschläge ab. Aktualisiere am besten deine Stilvorlieben.",
+  "insightMoreBottomsThanTops": "Du hast mehr Unterteile als Oberteile. Wie wäre es mit ein paar Hemden?",
+  "insightMoreTopsThanBottoms": "Du hast deutlich mehr Oberteile als Unterteile. Wie wäre es mit Hosen oder Röcken?",
+  "insightMostlyLayers": "Die meisten deiner Oberteile sind Layer wie Cardigans und Westen. Ergänze ein paar Basics zum Drunterziehen!",
+  "insightNeverWorn": "{count, plural, one {Du hast # Stück, das du nie getragen hast. Kombiniere es doch mal!} other {Du hast # Stücke, die du nie getragen hast. Kombiniere sie doch mal!}}",
+  "insightNoOutfitsThisWeek": "Du hast diese Woche noch keine Outfits erstellt. Hol dir einen Vorschlag!",
+  "insightStartAdding": "Beginne damit, ein paar Stücke zu deinem Kleiderschrank hinzuzufügen!",
+  "insights": {
+    "acceptanceTrend": {
+      "description": "Wie du im Laufe der Zeit auf Vorschläge reagiert hast",
+      "title": "Annahmequoten-Verlauf"
+    },
+    "colorDistribution": {
+      "description": "Die häufigsten Farben in deinem Kleiderschrank",
+      "noData": "Noch keine Farbdaten",
+      "title": "Farbverteilung"
+    },
+    "itemTypes": {
+      "description": "Aufteilung nach Kleidungstyp",
+      "noData": "Noch keine Stücke",
+      "title": "Kleidungsarten"
+    },
+    "leastWorn": {
+      "description": "Erwäge, diese Stücke zu tragen",
+      "noData": "Weiter tracken!",
+      "title": "Am seltensten getragen"
+    },
+    "mostWorn": {
+      "description": "Deine Favoriten",
+      "noData": "Beginne, deine Outfits zu tracken!",
+      "title": "Am häufigsten getragen"
+    },
+    "neverWorn": {
+      "description": "Zeit, diese auszuprobieren?",
+      "noData": "Alle Stücke wurden getragen!",
+      "title": "Nie getragen"
+    },
+    "title": "Einblicke"
+  },
+  "loadError": "Statistiken konnten nicht geladen werden. Bitte versuche es erneut.",
+  "percent": "{value} %",
+  "stats": {
+    "acceptanceRate": {
+      "description": "der Vorschläge angenommen",
+      "title": "Annahmequote"
+    },
+    "avgRating": "Ø Bewertung: {rating}/5",
+    "outfitsGenerated": {
+      "description": "{count} diese Woche",
+      "title": "Outfits generiert"
+    },
+    "totalItems": {
+      "description": "{count} bereit zum Tragen",
+      "title": "Stücke gesamt"
+    },
+    "totalWears": {
+      "description": "Tracke deine Outfits",
+      "noData": "Noch keine Daten",
+      "title": "Getragen insgesamt"
+    }
+  },
+  "subtitle": "Deine Kleiderschrank-Einblicke und Statistiken",
+  "title": "Statistiken",
+  "wearCount": "{count}x"
+}

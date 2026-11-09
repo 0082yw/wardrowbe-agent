@@ -1,0 +1,482 @@
+import logging
+from datetime import UTC, datetime, timedelta
+from uuid import UUID
+
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from app.config import get_settings
+from app.models.item import ClothingItem
+from app.models.learning import UserLearningProfile
+from app.models.notification import Notification, NotificationStatus
+from app.models.outfit import Outfit, OutfitSource, OutfitStatus, TimeOfDay
+from app.models.schedule import Schedule
+from app.models.user import User
+from app.services.ai_service import AIDisabledError
+from app.services.learning_service import LearningService
+from app.services.notification_providers import NotificationMessage
+from app.services.notification_service import NotificationDispatcher
+from app.services.recommendation_service import RecommendationService
+from app.services.weather_service import WeatherService
+from app.utils.redis_lock import distributed_lock
+from app.utils.timezone import get_user_timezone, get_user_today
+from app.workers.db import get_db_session
+
+logger = logging.getLogger(__name__)
+
+
+async def reset_schedule_trigger(ctx: dict, schedule_id: str) -> None:
+    try:
+        db = get_db_session(ctx)
+        try:
+            result = await db.execute(select(Schedule).where(Schedule.id == schedule_id))
+            sched = result.scalar_one_or_none()
+            if sched:
+                sched.last_triggered_at = None
+                await db.commit()
+                logger.info(
+                    f"Reset last_triggered_at for schedule {schedule_id} after final retry failure"
+                )
+        finally:
+            await db.close()
+    except (OSError, ConnectionError) as e:
+        logger.warning(f"Best-effort recovery failed for schedule {schedule_id}: {e}")
+
+
+async def _retry_notification(
+    db: AsyncSession, dispatcher: NotificationDispatcher, notification: Notification
+) -> bool:
+    await db.refresh(notification)
+    if notification.status != NotificationStatus.retrying:
+        return False
+
+    notification.attempts += 1
+    notification.last_attempt_at = datetime.now(UTC)
+
+    result = await dispatcher.retry_notification(notification)
+
+    sent = result.status == NotificationStatus.sent
+    if sent:
+        notification.status = NotificationStatus.sent
+        notification.sent_at = datetime.now(UTC)
+        notification.error_message = None
+    elif not result.retryable or notification.attempts >= notification.max_attempts:
+        notification.status = NotificationStatus.failed
+        notification.error_message = result.error or "Max retries exceeded"
+    else:
+        notification.error_message = result.error
+
+    await db.commit()
+    return sent
+
+
+# A database error aborts the transaction, so it is rolled back and the attempt recorded afresh;
+# otherwise every later notification in the batch would fail with it.
+async def _record_failed_retry(
+    db: AsyncSession, notification: Notification, notification_id: UUID, error: Exception
+) -> None:
+    try:
+        await db.rollback()
+        await db.refresh(notification)
+        notification.attempts += 1
+        notification.error_message = str(error)
+        if notification.attempts >= notification.max_attempts:
+            notification.status = NotificationStatus.failed
+        await db.commit()
+    except Exception:
+        logger.exception("Could not record the failed retry of notification %s", notification_id)
+        await db.rollback()
+
+
+async def retry_failed_notifications(ctx: dict):
+    logger.info("Checking for notifications to retry...")
+
+    db = get_db_session(ctx)
+    try:
+        # Get notifications in retrying status
+        result = await db.execute(
+            select(Notification).where(
+                and_(
+                    Notification.status == NotificationStatus.retrying,
+                    Notification.attempts < Notification.max_attempts,
+                )
+            )
+        )
+        notifications = list(result.scalars().all())
+
+        if not notifications:
+            logger.info("No notifications to retry")
+            return {"retried": 0}
+
+        retried = 0
+        dispatcher = NotificationDispatcher(db)
+
+        # Ids are read up front because a rolled-back retry expires every loaded notification,
+        # and reading an expired attribute outside an awaited refresh raises MissingGreenlet.
+        for notification_id, notification in [(n.id, n) for n in notifications]:
+            # Non-blocking lock: skip if another worker already retrying this one
+            try:
+                async with distributed_lock(
+                    f"notif-retry:{notification_id}", timeout=30, blocking_timeout=0
+                ):
+                    try:
+                        if await _retry_notification(db, dispatcher, notification):
+                            retried += 1
+                    except Exception as e:
+                        logger.exception(f"Failed to retry notification {notification_id}: {e}")
+                        await _record_failed_retry(db, notification, notification_id, e)
+            except TimeoutError:
+                logger.debug(
+                    "Skipping notification %s retry — another worker holds the lock",
+                    notification_id,
+                )
+            except Exception:
+                # A lock error is either before the send, so nothing was sent, or on release after
+                # the attempt was already committed, so no attempt is charged here.
+                logger.exception("Retry lock for notification %s failed", notification_id)
+
+        logger.info(f"Retried {retried} notifications")
+        return {"retried": retried}
+
+    except Exception as e:
+        logger.exception("Error in retry_failed_notifications")
+        await db.rollback()
+        return {"retried": 0, "error": str(e)}
+    finally:
+        await db.close()
+
+
+async def process_scheduled_notification(ctx: dict, schedule_id: str):
+    logger.info(f"Processing scheduled notification for schedule {schedule_id}")
+
+    db = get_db_session(ctx)
+    try:
+        result = await db.execute(select(Schedule).where(Schedule.id == schedule_id))
+        schedule = result.scalar_one_or_none()
+        if not schedule:
+            logger.warning(f"Schedule {schedule_id} not found, skipping")
+            return {"status": "skipped", "reason": "not_found"}
+
+        user_result = await db.execute(
+            select(User)
+            .options(selectinload(User.preferences))
+            .where(User.id == schedule.user_id, User.is_active.is_(True))
+        )
+        user = user_result.scalar_one_or_none()
+        if not user:
+            logger.warning(f"User {schedule.user_id} not found or deleted, skipping")
+            return {"status": "skipped", "reason": "user_not_found"}
+
+        dispatcher = NotificationDispatcher(db)
+        if not await dispatcher.enabled_channels(schedule.user_id):
+            logger.warning(f"No enabled channels for user {schedule.user_id}, skipping")
+            return {"status": "skipped", "reason": "no_channels"}
+
+        is_for_tomorrow = schedule.notify_day_before
+        weather_override = None
+
+        if is_for_tomorrow and user.location_lat is not None and user.location_lon is not None:
+            try:
+                weather_service = WeatherService()
+                weather_override = await weather_service.get_tomorrow_weather(
+                    user.location_lat, user.location_lon
+                )
+                logger.info(
+                    f"Fetched tomorrow's forecast for user {user.id}: "
+                    f"{weather_override.temperature}°C, {weather_override.condition}"
+                )
+            except Exception as e:
+                logger.warning(f"Failed to fetch tomorrow's weather: {e}")
+
+        user_today = get_user_today(user)
+        target_date = user_today + timedelta(days=1) if is_for_tomorrow else user_today
+
+        recommendation_service = RecommendationService(db)
+        outfit = await recommendation_service.generate_recommendation(
+            user=user,
+            occasion=schedule.occasion,
+            source=OutfitSource.scheduled,
+            weather_override=weather_override,
+            time_of_day=TimeOfDay.full_day if is_for_tomorrow else None,
+            single_outfit=True,
+            scheduled_date=target_date,
+        )
+
+        await dispatcher.send_outfit_notification(user_id=str(user.id), outfit_id=str(outfit.id))
+
+        await db.commit()
+
+        logger.info(
+            f"Processed schedule {schedule_id} for user {schedule.user_id} "
+            f"(occasion={schedule.occasion}, outfit={outfit.id}, for_tomorrow={is_for_tomorrow})"
+        )
+        return {"status": "sent", "outfit_id": str(outfit.id)}
+
+    except AIDisabledError:
+        # Internal text is off — defer to the external agent; skip, don't retry.
+        logger.info(f"Skipping schedule {schedule_id}: internal AI text disabled")
+        return {"status": "skipped", "reason": "internal_ai_disabled"}
+    except ValueError as e:
+        logger.warning(f"Cannot generate outfit for schedule {schedule_id}: {e}")
+        return {"status": "skipped", "reason": str(e)}
+    except Exception:
+        logger.exception(f"Failed to process schedule {schedule_id}")
+        await db.rollback()
+        if ctx.get("job_try", 1) >= 3:
+            await reset_schedule_trigger(ctx, schedule_id)
+        raise
+    finally:
+        await db.close()
+
+
+async def check_scheduled_notifications(ctx: dict):
+    logger.info("Checking scheduled notifications...")
+
+    db = get_db_session(ctx)
+    try:
+        now_utc = datetime.now(UTC)
+
+        # Stored times are the user's LOCAL time, so we load the user's
+        # timezone and convert the current UTC instant to their local
+        # clock. This way DST transitions are handled correctly because
+        # ZoneInfo uses the real offset for today's date, not a fixed
+        # reference date.
+        result = await db.execute(
+            select(Schedule).options(selectinload(Schedule.user)).where(Schedule.enabled == True)  # noqa: E712
+        )
+        schedules = list(result.scalars().all())
+
+        to_enqueue: list[Schedule] = []
+        for schedule in schedules:
+            now_local = now_utc.astimezone(get_user_timezone(schedule.user))
+            local_day = now_local.weekday()
+            local_minutes = now_local.hour * 60 + now_local.minute
+            tomorrow_local_day = (local_day + 1) % 7
+
+            day_match = (not schedule.notify_day_before and schedule.day_of_week == local_day) or (
+                schedule.notify_day_before and schedule.day_of_week == tomorrow_local_day
+            )
+            if not day_match:
+                continue
+
+            schedule_minutes = (
+                schedule.notification_time.hour * 60 + schedule.notification_time.minute
+            )
+            if abs(schedule_minutes - local_minutes) > 1:
+                continue
+
+            threshold = now_utc - timedelta(hours=1)
+            if schedule.last_triggered_at and schedule.last_triggered_at >= threshold:
+                logger.debug(
+                    f"Skipping schedule {schedule.id} - triggered recently at "
+                    f"{schedule.last_triggered_at}"
+                )
+                continue
+
+            schedule.last_triggered_at = now_utc
+            to_enqueue.append(schedule)
+
+            logger.info(
+                f"Enqueuing notification job for schedule {schedule.id} "
+                f"(user={schedule.user_id}, occasion={schedule.occasion})"
+            )
+
+        if to_enqueue:
+            await db.commit()
+
+        minute_key = now_utc.strftime("%Y%m%d%H%M")
+        enqueue_failures = 0
+        for schedule in to_enqueue:
+            try:
+                await ctx["redis"].enqueue_job(
+                    "process_scheduled_notification",
+                    str(schedule.id),
+                    _queue_name="arq:tagging",
+                    _job_id=f"sched:{schedule.id}:{minute_key}",
+                )
+            except Exception as e:
+                enqueue_failures += 1
+                logger.error(f"Failed to enqueue job for schedule {schedule.id}: {e}")
+
+        if enqueue_failures:
+            logger.warning(f"{enqueue_failures}/{len(to_enqueue)} jobs failed to enqueue")
+
+        logger.info(f"Checked {len(schedules)} schedules, enqueued {len(to_enqueue)} jobs")
+        return {"checked": len(schedules), "enqueued": len(to_enqueue)}
+
+    except Exception as e:
+        logger.exception("Error in check_scheduled_notifications")
+        return {"error": str(e)}
+    finally:
+        await db.close()
+
+
+async def check_wash_reminders(ctx: dict):
+    logger.info("Checking wash reminders...")
+
+    # Non-blocking global lock: if another worker already running this job, skip.
+    try:
+        async with distributed_lock("wash-reminders-cron", timeout=600, blocking_timeout=0):
+            return await _check_wash_reminders_inner(ctx)
+    except TimeoutError:
+        logger.debug("Skipping wash reminders — another worker holds the lock")
+        return {"notified": 0, "skipped": "lock_held"}
+
+
+def wash_reminder_message(items: list[ClothingItem]) -> NotificationMessage:
+    count = len(items)
+    summary = ", ".join(i.name or i.type for i in items[:5])
+    if count > 5:
+        summary += f" and {count - 5} more"
+    noun = "1 item needs" if count == 1 else f"{count} items need"
+    return NotificationMessage(
+        title="Laundry Reminder",
+        body=f"{noun} washing: {summary}",
+        url=get_settings().app_link("/dashboard/wardrobe"),
+        url_label="View Wardrobe",
+        tags=["shirt", "droplet"],
+        data={"screen": "wardrobe"},
+    )
+
+
+async def _check_wash_reminders_inner(ctx: dict):
+    db = get_db_session(ctx)
+    try:
+        result = await db.execute(
+            select(ClothingItem).where(
+                and_(
+                    ClothingItem.needs_wash == True,  # noqa: E712
+                    ClothingItem.is_archived == False,  # noqa: E712
+                )
+            )
+        )
+        dirty_items = list(result.scalars().all())
+
+        if not dirty_items:
+            logger.info("No items need washing")
+            return {"notified": 0}
+
+        user_items: dict[str, list] = {}
+        for item in dirty_items:
+            uid = str(item.user_id)
+            if uid not in user_items:
+                user_items[uid] = []
+            user_items[uid].append(item)
+
+        dispatcher = NotificationDispatcher(db)
+        notified = 0
+
+        for user_id, items in user_items.items():
+            try:
+                one_day_ago = datetime.now(UTC) - timedelta(days=1)
+                existing = await db.execute(
+                    select(Notification).where(
+                        and_(
+                            Notification.user_id == user_id,
+                            Notification.payload["type"].astext == "wash_reminder",
+                            Notification.status == NotificationStatus.sent,
+                            Notification.created_at >= one_day_ago,
+                        )
+                    )
+                )
+                if existing.scalars().first():
+                    continue
+
+                message = wash_reminder_message(items)
+                results = await dispatcher.deliver(user_id, message)
+                if not results:
+                    continue
+
+                last = results[-1]
+                sent = last.status == NotificationStatus.sent
+                payload = {
+                    "type": "wash_reminder",
+                    "item_count": len(items),
+                    "title": message.title,
+                    "body": message.body,
+                }
+                # Only a sent reminder holds off the next one for a day, so that a failed one is
+                # tried again on the next run.
+                dispatcher.record_attempts(user_id, results, payload)
+                await db.commit()
+                if sent:
+                    notified += 1
+
+            except Exception:
+                logger.exception(f"Failed to send wash reminder for user {user_id}")
+                continue
+
+        logger.info(f"Sent wash reminders to {notified} users")
+        return {"notified": notified}
+
+    except Exception as e:
+        logger.exception("Error in check_wash_reminders")
+        return {"error": str(e)}
+    finally:
+        await db.close()
+
+
+async def update_learning_profiles(ctx: dict):
+    logger.info("Starting periodic learning profile updates...")
+
+    db = get_db_session(ctx)
+    try:
+        now = datetime.now(UTC)
+        one_hour_ago = now - timedelta(hours=1)
+
+        # Find users with recent feedback who need profile updates
+        # (accepted/rejected outfits in last hour)
+        result = await db.execute(
+            select(User.id)
+            .join(Outfit, User.id == Outfit.user_id)
+            .where(
+                and_(
+                    User.is_active.is_(True),
+                    Outfit.status.in_([OutfitStatus.accepted, OutfitStatus.rejected]),
+                    Outfit.responded_at >= one_hour_ago,
+                )
+            )
+            .distinct()
+        )
+        users_with_recent_feedback = {row[0] for row in result.all()}
+
+        if not users_with_recent_feedback:
+            logger.info("No users with recent feedback to update")
+            return {"updated": 0}
+
+        learning_service = LearningService(db)
+        updated_count = 0
+
+        for user_id in users_with_recent_feedback:
+            try:
+                # Check if profile needs update (doesn't exist or is stale)
+                profile_result = await db.execute(
+                    select(UserLearningProfile).where(UserLearningProfile.user_id == user_id)
+                )
+                profile = profile_result.scalar_one_or_none()
+
+                needs_update = (
+                    profile is None
+                    or profile.last_computed_at is None
+                    or profile.last_computed_at < one_hour_ago
+                )
+
+                if needs_update:
+                    await learning_service.recompute_learning_profile(user_id)
+                    await learning_service.generate_insights(user_id)
+                    updated_count += 1
+                    logger.info(f"Updated learning profile for user {user_id}")
+
+            except Exception as e:
+                logger.warning(f"Failed to update learning profile for user {user_id}: {e}")
+                continue
+
+        logger.info(f"Completed learning profile updates: {updated_count} profiles updated")
+        return {"updated": updated_count}
+
+    except Exception as e:
+        logger.exception("Error in update_learning_profiles")
+        return {"error": str(e)}
+    finally:
+        await db.close()

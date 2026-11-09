@@ -1,0 +1,69 @@
+{
+  "insightColorHeavy": "ワードローブは{color}に偏っています（{percent}）。ほかの色も取り入れてみませんか？",
+  "insightGreatTaste": "センス抜群です！提案の{percent}を採用しています。",
+  "insightLimitedColors": "ワードローブの色のバリエーションが少なめです。新しい色に挑戦してみましょう！",
+  "insightManyRejections": "却下している提案が多めです。スタイル設定を見直してみましょう。",
+  "insightMoreBottomsThanTops": "トップスよりボトムスが多いようです。シャツを買い足してみませんか？",
+  "insightMoreTopsThanBottoms": "ボトムスよりトップスがかなり多いようです。パンツやスカートを追加してみませんか？",
+  "insightMostlyLayers": "トップスの多くがカーディガンやベストなどの重ね着用です。中に着るベーシックなアイテムも足しましょう！",
+  "insightNeverWorn": "{count, plural, one {一度も着ていないアイテムが#点あります。コーデに取り入れてみませんか？} other {一度も着ていないアイテムが#点あります。コーデに取り入れてみませんか？}}",
+  "insightNoOutfitsThisWeek": "今週はまだコーデを作成していません。提案を受けてみましょう！",
+  "insightStartAdding": "まずはワードローブにアイテムを追加しましょう！",
+  "insights": {
+    "acceptanceTrend": {
+      "description": "提案への反応の推移",
+      "title": "承認率の推移"
+    },
+    "colorDistribution": {
+      "description": "ワードローブで最も多い色",
+      "noData": "色データがまだありません",
+      "title": "色の分布"
+    },
+    "itemTypes": {
+      "description": "衣類タイプ別の内訳",
+      "noData": "アイテムがまだありません",
+      "title": "アイテムタイプ"
+    },
+    "leastWorn": {
+      "description": "これらを着てみましょう",
+      "noData": "記録を続けましょう！",
+      "title": "着用回数が少ない"
+    },
+    "mostWorn": {
+      "description": "お気に入り",
+      "noData": "コーデの記録を始めましょう！",
+      "title": "着用回数が多い"
+    },
+    "neverWorn": {
+      "description": "試してみませんか？",
+      "noData": "すべてのアイテムを着用しました！",
+      "title": "未着用"
+    },
+    "title": "インサイト"
+  },
+  "loadError": "分析の読み込みに失敗しました。もう一度お試しください。",
+  "percent": "{value}%",
+  "stats": {
+    "acceptanceRate": {
+      "description": "の提案を承認",
+      "title": "承認率"
+    },
+    "avgRating": "平均評価：{rating}/5",
+    "outfitsGenerated": {
+      "description": "今週 {count} 件",
+      "title": "生成されたコーデ"
+    },
+    "totalItems": {
+      "description": "着用可能 {count} 件",
+      "title": "アイテム総数"
+    },
+    "totalWears": {
+      "description": "コーデを記録",
+      "noData": "データがまだありません",
+      "title": "着用回数"
+    }
+  },
+  "subtitle": "ワードローブのインサイトと統計",
+  "title": "分析",
+  "wearCount": "{count}回"
+}

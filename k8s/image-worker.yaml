@@ -1,0 +1,101 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: image-worker
+  namespace: wardrobe
+  labels:
+    app: image-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: image-worker
+  template:
+    metadata:
+      labels:
+        app: image-worker
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: image-worker
+          image: wardrobe/backend:latest
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            seccompProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
+          command:
+            - arq
+            - app.workers.image_worker.ImageWorkerSettings
+          envFrom:
+            - configMapRef:
+                name: wardrobe-config
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: wardrobe-secrets
+                  key: database-url
+            - name: REDIS_URL
+              value: "redis://redis:6379"
+            - name: STORAGE_PATH
+              value: "/data/uploads"
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: wardrobe-secrets
+                  key: backend-secret-key
+            - name: AI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: wardrobe-secrets
+                  key: ai-api-key
+                  optional: true
+            - name: NTFY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: wardrobe-notifications
+                  key: ntfy-token
+                  optional: true
+            - name: SMTP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: wardrobe-notifications
+                  key: smtp-user
+                  optional: true
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: wardrobe-notifications
+                  key: smtp-password
+                  optional: true
+            - name: BG_REMOVAL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: wardrobe-secrets
+                  key: bg-removal-api-key
+                  optional: true
+          volumeMounts:
+            - name: uploads
+              mountPath: /data/uploads
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              # rembg holds a model plus its working buffers, and Pillow needs
+              # room for a full-resolution decode alongside it.
+              memory: "1Gi"
+              cpu: "1000m"
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: uploads-pvc

@@ -1,0 +1,94 @@
+{
+  "bestCombinations": {
+    "description": "Kombinationen, die du immer wieder gerne zusammen trägst",
+    "title": "Deine besten Kombinationen"
+  },
+  "colorPreferences": {
+    "description": "Farben, die du eher annimmst oder ablehnst",
+    "noData": "Noch nicht genug Feedback, um Farbvorlieben zu erkennen.",
+    "title": "Erlernte Farbvorlieben"
+  },
+  "confidence": "{percent} % sicher",
+  "dismiss": "Schließen",
+  "insightCategoryColor": "Farbe",
+  "insightCategoryOccasion": "Anlass",
+  "insightCategoryOverall": "Gesamt",
+  "insightCategoryStyle": "Stil",
+  "insightCategoryWeather": "Wetter",
+  "insightColorAvoidedDescription": "Du lehnst Outfits mit {color} tendenziell ab. Wir schlagen dir Alternativen vor.",
+  "insightColorAvoidedTitle": "Kein Fan von {color}",
+  "insightColorLovedDescription": "Dein Feedback zeigt eine klare Vorliebe für {color}. Wir berücksichtigen das verstärkt bei deinen Empfehlungen.",
+  "insightColorLovedTitle": "Du liebst {color}!",
+  "insightGreatMatchDescription": "Du nimmst {percent} unserer Vorschläge an. Wir lernen deinen Stil gut kennen!",
+  "insightGreatMatchTitle": "Passt gut!",
+  "insightHelpUsLearnDescription": "Du hast viele Vorschläge abgelehnt. Aktualisiere deine Vorlieben, damit wir besser werden.",
+  "insightHelpUsLearnTitle": "Hilf uns, deinen Stil zu lernen",
+  "insightStyleLeaningDescription": "Nach deinem Feedback tendierst du zu {styles}-Stilen.",
+  "insightStyleLeaningTitle": "Dein Stil: {style}",
+  "interpretationDisliked": "nicht gemocht",
+  "interpretationLiked": "gemocht",
+  "interpretationNeutral": "neutral",
+  "interpretationStronglyDisliked": "überhaupt nicht gemocht",
+  "interpretationStronglyLiked": "sehr gemocht",
+  "lastUpdated": "Lernprofil zuletzt aktualisiert: {date}",
+  "loadError": "Lerndaten konnten nicht geladen werden. Bitte versuche es erneut.",
+  "noData": {
+    "alreadyGaveFeedback": "Bereits Feedback gegeben? Klicke auf „Jetzt berechnen“.",
+    "computeNow": "Jetzt berechnen",
+    "computing": "Wird berechnet...",
+    "description": "Beginne damit, Outfit-Vorschläge anzunehmen oder abzulehnen und sie zu bewerten.",
+    "getOutfitSuggestions": "Outfit-Vorschläge erhalten",
+    "title": "Noch keine Lerndaten"
+  },
+  "occasionPatterns": {
+    "description": "Was für verschiedene Anlässe funktioniert",
+    "title": "Anlass-Muster"
+  },
+  "percent": "{value} %",
+  "preferredColors": "Bevorzugte Farben:",
+  "recompute": "Neu berechnen",
+  "stats": {
+    "acceptanceRate": "Annahmequote",
+    "averageRating": "Durchschnittsbewertung",
+    "feedbackGiven": "Feedback gegeben",
+    "notEnoughData": "Nicht genug Daten",
+    "outOfStars": "von {max, plural, one {# Stern} other {# Sternen}}",
+    "outfitsRated": "{count, plural, one {{count} Outfit bewertet} other {{count} Outfits bewertet}}",
+    "rateMoreOutfits": "Mehr Outfits bewerten",
+    "rateOutfitStyles": "Outfit-Stile bewerten",
+    "styleRating": "Stilbewertung",
+    "styleSatisfaction": "Stilzufriedenheit",
+    "suggestionsAccepted": "der Vorschläge angenommen"
+  },
+  "styleInsights": {
+    "description": "Was wir über deine Vorlieben gelernt haben",
+    "generate": "Neue Einblicke",
+    "title": "Stil-Einblicke"
+  },
+  "stylePreferences": {
+    "description": "Stile, die deinem Geschmack entsprechen",
+    "noData": "Noch nicht genug Feedback, um Stilvorlieben zu erkennen.",
+    "title": "Erlernte Stilvorlieben"
+  },
+  "subtitle": "Wie die KI aus deinem Feedback lernt",
+  "subtitleEmpty": "Beginne, Outfits zu bewerten, damit die KI deine Vorlieben lernt",
+  "successRate": "{percent} % Erfolg",
+  "suggestedUpdates": {
+    "addToAvoid": "Zu vermeidenden Farben hinzufügen:",
+    "addToFavorites": "Zu Lieblingsfarben hinzufügen:",
+    "description": "Basierend auf deinem Feedback empfehlen wir, deine Vorlieben anzupassen",
+    "title": "Vorgeschlagene Änderungen",
+    "updatePreferences": "Vorlieben aktualisieren"
+  },
+  "timesPaired": "{count}x kombiniert",
+  "title": "KI-Lernprofil",
+  "weatherPreferences": {
+    "description": "Wie du dich bei verschiedenen Bedingungen kleidest",
+    "layers": "~{count} Schichten",
+    "title": "Wetter-Vorlieben"
+  },
+  "weatherTypeCold": "Kalt",
+  "weatherTypeCool": "Kühl",
+  "weatherTypeHot": "Heiß",
+  "weatherTypeMild": "Mild"
+}

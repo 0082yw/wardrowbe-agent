@@ -1,0 +1,101 @@
+{
+  "title": "Assistant de tenues IA",
+  "description": "Consultez vos vêtements ou jusqu’à 3 tenues quotidiennes, de travail ou formelles selon les couleurs, types et niveaux de formalité enregistrés.",
+  "inputLabel": "Que souhaitez-vous porter ou rechercher ?",
+  "placeholder": "Commandes chinoises prises en charge : 帮我搭配一套日常穿搭 / 帮我搭配三套通勤穿搭，包含白色衬衫和蓝色牛仔裤 / 推荐正式穿搭",
+  "inputHelp": "Vous pouvez modifier la demande pendant la génération ; cela annule le précédent aperçu.",
+  "characterCount": "{count} / {max} caractères",
+  "generate": "Générer un aperçu",
+  "generating": "Génération…",
+  "loading": "Recherche dans votre garde-robe et préparation de l’aperçu…",
+  "results": "Résultats de l’aperçu",
+  "reply": "Réponse de l’assistant",
+  "outfit": "Aperçu de pièce {number}",
+  "imageUnavailable": "Image indisponible",
+  "unnamedItem": "Vêtement sans nom",
+  "itemType": "Type : {type}",
+  "reasoning": "Explication de la recherche",
+  "styleNotes": "Notes sur l’aperçu",
+  "previewOnly": "Aperçus de pièces individuelles uniquement. Ces résultats ne constituent pas une tenue complète et aucune tenue n’a été enregistrée.",
+  "emptyState": "Décrivez votre demande pour commencer.",
+  "status": {
+    "success": "Aperçu prêt",
+    "needs_clarification": "Précisions nécessaires",
+    "no_items": "Aucun vêtement disponible",
+    "invalid_result": "Résultat non valide"
+  },
+  "guidance": {
+    "needs_clarification": "Répondez à la question de l’assistant avec des précisions, comme les types de vêtements recherchés.",
+    "no_items": "Aucune pièce disponible trouvée. Vérifiez les vêtements correspondants et leur état.",
+    "invalid_result": "Cet aperçu n’a pas pu être validé. Veuillez le générer à nouveau."
+  },
+  "errors": {
+    "blank": "Veuillez saisir une demande.",
+    "tooLong": "Limitez votre demande à 10 000 caractères.",
+    "auth": "Reconnectez-vous pour utiliser l’assistant.",
+    "invalidInput": "La demande a été refusée. Vérifiez votre saisie et réessayez.",
+    "rateLimited": "Trop de demandes. Patientez avant de réessayer.",
+    "failed": "La demande d’aperçu a échoué. Veuillez réessayer.",
+    "invalidResponse": "Le service a renvoyé un format inattendu. Veuillez réessayer."
+  },
+  "runtimeBadge": {
+    "unknown": "Mode du modèle non confirmé",
+    "configured": "Ollama local configuré",
+    "unavailable": "Modèle local indisponible",
+    "remoteConfigured": "Point d’accès distant joignable",
+    "remoteUnavailable": "Modèle distant indisponible"
+  },
+  "runtimeNotice": {
+    "unknown": "Aperçu de recherche dans la garde-robe en lecture seule. Le backend n’a pas confirmé le mode du modèle. Aucun ensemble n’est enregistré.",
+    "configured": "Le backend a confirmé Ollama local qwen3:0.6b-cpu ; cette vérification ne lance pas d’inférence. Requêtes de vêtements et jusqu’à 3 tenues basiques quotidiennes ou de travail validées par le backend. Aucun enregistrement. Utilisez les exemples chinois pris en charge.",
+    "unavailable": "Le backend indique que le modèle local est indisponible ou que sa configuration CPU n’est pas confirmée. Cette vérification d’état n’exécute pas le modèle. Les aperçus restent en lecture seule.",
+    "remoteConfigured": "Le point d’accès distant est joignable. Ce contrôle ne lance aucune inférence et ne vérifie pas l’utilisation du GPU. Les aperçus ne sont pas enregistrés.",
+    "remoteUnavailable": "Le tunnel SSH ou le service distant est indisponible. Vérifiez le tunnel établi manuellement et le service. Aucun repli automatique vers le modèle local."
+  },
+  "outfitReasoning": "Raison du choix",
+  "outfitPreviewOnly": "Aperçu de tenue basique non enregistré. Vérifiez le contexte ; météo et matières ne sont pas déduites.",
+  "scene": {
+    "daily": "Tenue quotidienne",
+    "commute": "Tenue de travail",
+    "formal": "Tenue formelle"
+  },
+  "roles": {
+    "base_top": "Haut",
+    "bottom": "Bas",
+    "footwear": "Chaussures (facultatif)",
+    "outer_layer": "Veste (facultatif)"
+  },
+  "previewSelector": "Changer de tenue",
+  "allPreviews": "Toutes les tenues",
+  "selectPreview": "Tenue {number}",
+  "unsaved": "Aperçu non enregistré",
+  "runtimeDetails": {
+    "label": "État de l’inférence",
+    "localCpu": "CPU local (local_cpu)",
+    "remoteGpu": "Mode GPU distant (remote_gpu)",
+    "gpuUnverified": "L’exécution sur GPU n’a pas été vérifiée ; l’accélération GPU n’est pas confirmée.",
+    "gpuReadinessOnly": "Seule la disponibilité du service est vérifiée ici. La preuve GPU figure avec chaque résultat."
+  },
+  "tunnelState": {
+    "connected": "Point d’accès du tunnel SSH joignable",
+    "disconnected": "Tunnel SSH déconnecté ou service de modèle indisponible",
+    "unknown": "État du point d’accès SSH non confirmé"
+  },
+  "requestExecution": {
+    "label": "Exécution de la requête",
+    "request": "Requête {id}",
+    "gpuVerified": "Cette requête a été vérifiée sur le GPU distant autorisé.",
+    "gpuUnverified": "Aucune preuve GPU fiable n’est disponible pour cette requête.",
+    "copyFallback": "Certains textes utilisent un contenu de secours sûr du serveur.",
+    "proofLabel": "Preuve GPU",
+    "proofExpired": "La preuve a expiré ou ne peut pas être vérifiée actuellement. Ces mesures sont historiques.",
+    "proofRequest": "Identifiant de requête",
+    "proofPid": "PID du modèle",
+    "proofDevice": "UUID GPU",
+    "proofLayers": "Couches chargées",
+    "proofMemory": "Mémoire maximale du processus échantillonnée",
+    "proofMemoryValue": "{value, number} MiB",
+    "proofSamples": "Échantillons",
+    "sampleScope": "Les mesures couvrent la fenêtre capturée, pas nécessairement le pic de toute la requête."
+  }
+}

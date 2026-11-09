@@ -1,0 +1,101 @@
+{
+  "title": "AI 穿搭助手",
+  "description": "查詢真實衣物，或依記錄的顏色、類型和正式程度產生最多 3 套日常、通勤、正式穿搭。",
+  "inputLabel": "你想穿什麼，或查詢哪些衣物？",
+  "placeholder": "簡體中文指令：帮我搭配一套日常穿搭 / 帮我搭配三套通勤穿搭，包含白色衬衫和蓝色牛仔裤 / 推荐正式穿搭",
+  "inputHelp": "產生期間也可修改需求；修改後會取消上一次預覽。",
+  "characterCount": "{count} / {max} 字",
+  "generate": "產生預覽",
+  "generating": "正在產生…",
+  "loading": "正在查詢衣櫥並整理預覽…",
+  "results": "預覽結果",
+  "reply": "助手回覆",
+  "outfit": "單品預覽 {number}",
+  "imageUnavailable": "圖片暫時無法顯示",
+  "unnamedItem": "未命名衣物",
+  "itemType": "類型：{type}",
+  "reasoning": "查詢說明",
+  "styleNotes": "預覽提示",
+  "previewOnly": "僅供單品預覽，結果不代表整套搭配，尚未儲存任何穿搭。",
+  "emptyState": "寫下衣櫥相關需求，開始產生預覽。",
+  "status": {
+    "success": "預覽已產生",
+    "needs_clarification": "需要補充資訊",
+    "no_items": "沒有可用衣物",
+    "invalid_result": "結果無效"
+  },
+  "guidance": {
+    "needs_clarification": "請根據助手的提問補充需求，例如明確說明要查詢的衣物類型。",
+    "no_items": "本次查詢未找到可用衣物，請檢查對應衣物及其狀態。",
+    "invalid_result": "本次預覽未通過驗證，請重新產生。"
+  },
+  "errors": {
+    "blank": "請先輸入需求。",
+    "tooLong": "需求不能超過 10,000 字。",
+    "auth": "請重新登入後使用助手。",
+    "invalidInput": "請求未通過驗證，請檢查輸入後重試。",
+    "rateLimited": "請求過於頻繁，請稍後重試。",
+    "failed": "預覽請求失敗，請重試。",
+    "invalidResponse": "服務傳回的資料格式不正確，請重試。"
+  },
+  "runtimeBadge": {
+    "unknown": "模型模式待確認",
+    "configured": "本機 Ollama 設定已確認",
+    "unavailable": "本機模型暫時無法使用",
+    "remoteConfigured": "遠端模型入口可用",
+    "remoteUnavailable": "遠端模型暫不可用"
+  },
+  "runtimeNotice": {
+    "unknown": "唯讀衣櫥查詢預覽，模型模式尚未由後端確認。產生預覽不會儲存穿搭。",
+    "configured": "後端已確認本機 Ollama qwen3:0.6b-cpu 設定，此檢查不執行推論。支援衣物查詢及最多 3 套基礎日常、通勤穿搭；組合由後端驗證，預覽不會儲存穿搭。目前使用簡體中文指令。",
+    "unavailable": "後端回報本機模型暫時無法使用，或 CPU 設定尚未確認。此狀態檢查不會執行模型；預覽仍為唯讀。",
+    "remoteConfigured": "遠端模型服務入口可達；此檢查未執行推論，尚未驗證實際使用 GPU。預覽不會儲存穿搭。",
+    "remoteUnavailable": "SSH 通道入口或遠端模型服務不可用。請檢查手動建立的通道及服務；不會自動退回本機模型。"
+  },
+  "outfitReasoning": "搭配理由",
+  "outfitPreviewOnly": "這是未儲存的基礎穿搭預覽；請依實際場合確認，未推斷天氣或材質。",
+  "scene": {
+    "daily": "日常穿搭",
+    "commute": "通勤穿搭",
+    "formal": "正式穿搭"
+  },
+  "roles": {
+    "base_top": "上衣",
+    "bottom": "下裝",
+    "footwear": "鞋子（選用）",
+    "outer_layer": "外套（選用）"
+  },
+  "previewSelector": "切換穿搭方案",
+  "allPreviews": "全部方案",
+  "selectPreview": "方案 {number}",
+  "unsaved": "預覽尚未儲存",
+  "runtimeDetails": {
+    "label": "推論執行狀態",
+    "localCpu": "本機 CPU（local_cpu）",
+    "remoteGpu": "遠端 GPU 模式（remote_gpu）",
+    "gpuUnverified": "GPU 執行尚未驗證，不能據此認定已啟用 GPU 加速。",
+    "gpuReadinessOnly": "此處僅檢查服務就緒狀態；GPU 執行證明請見本次請求結果。"
+  },
+  "tunnelState": {
+    "connected": "SSH 通道入口可達",
+    "disconnected": "SSH 通道入口無法連線或模型服務不可用",
+    "unknown": "SSH 通道入口狀態未確認"
+  },
+  "requestExecution": {
+    "label": "本次請求執行情況",
+    "request": "請求 {id}",
+    "gpuVerified": "本次請求已核驗於獲准的遠端 GPU 上執行。",
+    "gpuUnverified": "本次請求尚無可信的 GPU 執行證明。",
+    "copyFallback": "部分文案使用後端安全備援。",
+    "proofLabel": "GPU執行證據",
+    "proofExpired": "證據已過期或目前無法確認；以下僅為歷史採樣。",
+    "proofRequest": "請求ID",
+    "proofPid": "模型程序PID",
+    "proofDevice": "GPU UUID",
+    "proofLayers": "載入層數",
+    "proofMemory": "採樣最高程序顯存",
+    "proofMemoryValue": "{value, number} MiB",
+    "proofSamples": "採樣數",
+    "sampleScope": "僅涵蓋已採集視窗，不代表整個請求的絕對峰值。"
+  }
+}
